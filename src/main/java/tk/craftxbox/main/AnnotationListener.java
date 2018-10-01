@@ -157,6 +157,14 @@ public class AnnotationListener {
 	    		if(cmd.equalsIgnoreCase("b;invite")){
 	    			sendRespondMessage(event.getChannel(), "<:vpGreenTick:319191454331437058> Invite me with https://discordapp.com/oauth2/authorize?client_id=" + event.getClient().getApplicationClientID() +"&scope=bot&permissions=70757577 !", event.getAuthor());
 	    		}
+	    		if(cmd.equalsIgnoreCase("b;legal")){
+	    			sendMessage(event.getChannel(), "By having this bot in your discord server you agree that "
+	    					+ "\n(i) usage of this bot may be terminated at any time without warning."
+	    					+ "\n(ii) bot usage, responses and errors may be logged"
+	    					+ "\n(iii) any data sent to the bot may be indefinately stored"
+	    					+ "\n(iv) staff of this bot may look through your discord guild to gather evidence on reports"
+	    					+ "\nNo warranty is provided for using this bot and I(craftxbox) disclaim responsibility for any damages that are caused as a result of use of this bot.");
+	    		}
 	    		if(cmd.equalsIgnoreCase("b;userinfo")){
 	    			IUser mentioned;
 	    			if(event.getMessage().getMentions().size() < 1) {
@@ -235,11 +243,11 @@ public class AnnotationListener {
 	    			if(msg.split(" ").length > 2){
 	    				if(checkPerms(event,Permissions.KICK)[0] == true){
 	    					if(event.getMessage().getMentions().size() > 0) {
-	    						sendMessage(event.getClient().getChannelByID(356298368919797760L), "Report from:" + event.getAuthor().getStringID() 
+	    						sendMessage(event.getClient().getChannelByID(356298368919797760L), "Report from: " + event.getAuthor().getStringID() 
 	    								+ "\nGuild: " + event.getGuild().getStringID()
 	    								+ "\nChannel: " + event.getChannel().getStringID()
 		    							+ "\nReported user: " + msg.split(" ")[1] 
-		        						+ "\nReason:" +msg.substring(msg.split(" ")[1].length() + 2 + msg.split(" ")[0].length()  ));
+		        						+ "\nReason: " +msg.substring(msg.split(" ")[1].length() + 2 + msg.split(" ")[0].length()  ));
 		    					for(Attachment i : event.getMessage().getAttachments()) {
 		    						try {
 		    							HttpURLConnection urlconn = (HttpURLConnection)new URL(i.getUrl()).openConnection();
@@ -299,8 +307,8 @@ public class AnnotationListener {
     								blacklisted.add(event.getAuthor().getStringID());
     								try {
 										Thread.sleep(7200000);
-									} catch (InterruptedException e) {
-										e.printStackTrace();
+									} catch (Exception e) {
+										sendMessageError(event.getChannel(),event,e,true);
 									}
     							}
     						};
@@ -387,12 +395,24 @@ public class AnnotationListener {
 			if(cmd.equalsIgnoreCase("b;setnotifychannel")){
 				if(checkPerms(event,Permissions.MANAGE_CHANNELS)[0]  || event.getAuthor().getStringID().equals("153353572711530496")){
 					try {
+						String[] args = msg.split(" ");
 						Wini guildOptions = new Wini(new File("guildopts.ini"));
 						String[] thisGuildOptions = guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ");
-						thisGuildOptions[0] = Long.toString(event.getChannel().getLongID());
+						try {
+							if(event.getGuild().getChannelByID(Long.parseLong(args[1].replaceAll("[^\\d]",""))) == null) {
+								thisGuildOptions[0] = Long.toString(event.getChannel().getLongID());
+								return;
+							}
+							thisGuildOptions[0] = args[1].replaceAll("[^\\d]","");
+						} catch (NumberFormatException e) {
+							sendMessage(event.getChannel(),"That isnt a channel! Got:"+ args[1]);
+							return;
+						} catch (IndexOutOfBoundsException e) {
+							thisGuildOptions[0] = Long.toString(event.getChannel().getLongID());
+						}
 					    guildOptions.put("Guilds", event.getGuild().getStringID(), thisGuildOptions[0] + " " + thisGuildOptions[1] + " " + thisGuildOptions[2]);
 					    guildOptions.store();
-					    sendMessage(event.getChannel(), "Successfully set the Notification Channel");
+					    sendMessage(event.getChannel(), "Successfully set the Notification Channel to " + event.getGuild().getChannelByID(Long.parseLong(thisGuildOptions[0])));
 					} catch (InvalidFileFormatException e) {
 						sendMessageError(event.getChannel(),event,e,true);
 						e.printStackTrace();
@@ -400,6 +420,9 @@ public class AnnotationListener {
 						sendMessageError(event.getChannel(),event,e,true);
 						e.printStackTrace();
 					}
+				} else {
+					sendMessage(event.getChannel(), "You do not have permission! (missing manage channels)");
+					return;
 				}
 			}
 			if(cmd.equalsIgnoreCase("b;togglewarnonly")){
@@ -418,13 +441,13 @@ public class AnnotationListener {
 						    guildOptions.store();
 						    sendMessage(event.getChannel(), "Successfully set the bot to Ban Mode");
 						}
-					} catch (InvalidFileFormatException e) {
-				
-						e.printStackTrace();
-					} catch (IOException e) {
-				
-						e.printStackTrace();
+					} catch (Exception e ) {
+						sendMessageError(event.getChannel(),event,e,true);
 					}
+				}
+				else {
+					sendMessage(event.getChannel(), "You do not have permission! (missing manage channels)");
+					return;
 				}
 			}
 			if(cmd.equalsIgnoreCase("b;togglebandetect")){
@@ -450,6 +473,10 @@ public class AnnotationListener {
 				
 						e.printStackTrace();
 					}
+				}
+				else {
+					sendMessage(event.getChannel(), "You do not have permission! (missing manage channels)");
+					return;
 				}
 			}
 			
@@ -493,12 +520,8 @@ public class AnnotationListener {
 							guilds.remove(0);
 						}
 						sendMessage(event.getChannel(),"Ban affected " + bannedUsers + " Guilds");
-					} catch (InvalidFileFormatException e) {
-						
-						e.printStackTrace();
-					} catch (IOException e) {
-						
-						e.printStackTrace();
+					} catch (Exception e ) {
+						sendMessageError(event.getChannel(),event,e,true);
 					}
 				}
 				else {
@@ -555,6 +578,7 @@ public class AnnotationListener {
 					bans.put("Warns",msg.split(" ")[1], msg.substring(msg.split(" ")[1].length() + msg.split(" ")[2].length() + 2));
 					bans.store();
 					String[] thisGuildOptions;
+					int affected = 0;
 					for(Object gl : event.getClient().getGuilds().toArray()){
 						
 						IGuild guild = (IGuild) gl;
@@ -570,16 +594,14 @@ public class AnnotationListener {
 							if(user.getStringID().equals(msg.split(" ")[1])){
 								IChannel channel = guild.getChannelByID(Long.parseLong(thisGuildOptions[0]));
 								sendMessage(channel, "User " + user.getName() + "#" + user.getDiscriminator() + " has a warning in the GlobalBans system for " + msg.substring(msg.split(" ")[1].length() + msg.split(" ")[2].length() + 2));
+								affected++;
 							}
 						}
 					}
+					sendMessage(event.getChannel(), "Warn affected " + affected + "servers.");
 					
-				} catch (InvalidFileFormatException e) {
-					
-					e.printStackTrace();
-				} catch (IOException e) {
-					
-					e.printStackTrace();
+				} catch (Exception e ) {
+					sendMessageError(event.getChannel(),event,e,true);
 				}
 			}
 			if(cmd.equalsIgnoreCase("b;eval") && event.getAuthor().getLongID() == 153353572711530496L){
@@ -643,8 +665,25 @@ public class AnnotationListener {
 				if((args.length >= 3)) {
 					IUser user = event.getClient().fetchUser(Long.parseLong(args[2]));
 					sendMessage(event.getClient().getChannelByID(Long.parseLong(args[1])),
-							"Your report for " + user.getName() + "#" + user.getDiscriminator() + "(" + args[2] + ") Was declined for:\n" +
-							msg.split(args[2])[1]);
+							"Hello! Your report for " + user.getName() + "#" + user.getDiscriminator() + "(" + args[2] + ") has been declined for:\n`" +
+							msg.split(args[2])[1]+"`");
+				}
+			}
+			if(cmd.equalsIgnoreCase("b;update")  && event.getAuthor().getLongID() == 153353572711530496l){
+				String[] args = msg.split(" ");
+				if((args.length >= 3)) {
+					IUser user = event.getClient().fetchUser(Long.parseLong(args[2]));
+					sendMessage(event.getClient().getChannelByID(Long.parseLong(args[1])),
+							"Hello! Your report for " + user.getName() + "#" + user.getDiscriminator() + "(" + args[2] + ") has been updated:\n`" +
+							msg.split(args[2])[1]+"`");
+				}
+			}
+			if(cmd.equalsIgnoreCase("b;accept")  && event.getAuthor().getLongID() == 153353572711530496l){
+				String[] args = msg.split(" ");
+				if((args.length >= 3)) {
+					IUser user = event.getClient().fetchUser(Long.parseLong(args[2]));
+					sendMessage(event.getClient().getChannelByID(Long.parseLong(args[1])),
+							"Hello! Your report for " + user.getName() + "#" + user.getDiscriminator() + "(" + args[2] + ") has been accepted. Thank you for helping to make discord a better place");
 				}
 			}
     	}
@@ -853,7 +892,7 @@ public class AnnotationListener {
 					} catch(MissingPermissionsException ex) {
 						for(IChannel i : event.getGuild().getChannels()) {
 							try {
-								IMessage check = sendMessage(i, "Warning! Globalbans cannot send messages to the set notification channel! Please address this issue with b;setnotify channel!");
+								IMessage check = sendMessage(i, "Warning! Globalbans cannot send messages to the set notification channel! Please address this issue with b;setnotifychannel!");
 								if(check != null) {
 									return;
 								}
