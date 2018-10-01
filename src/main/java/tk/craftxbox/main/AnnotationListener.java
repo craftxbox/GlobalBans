@@ -57,11 +57,12 @@ public class AnnotationListener {
 	final static Logger logger = LoggerFactory.getLogger(AnnotationListener.class);
 	Map<IUser,Long> lastActionTime = new HashMap<IUser,Long>();
 	Map<IUser,Integer> userMisuses = new HashMap<IUser,Integer>();
-	List<String> blacklisted = new ArrayList<String>();
+	static List<String> blacklisted = new ArrayList<String>();
+	static List<String> justBanned = new ArrayList<String>();
 	String commands[]=
-		{"b;about", "b;help", "b;invite", "b;userinfo", "b;report", "b;ping", "b;recount", "b;leave", "b;getguild", "b;eval", 
+		{"b;about", "b;help", "b;invite", "b;userinfo", "b;report", "b;ping", "b;recount", "b;leave", "b;getguild", "b;eval", "b;kick", "b;accept", "b;deny", "b;update",
 				"b;setnotifychannel", "b;report", "b;whitelist", "b;eval", "b;ban", "b;warn","b;togglewarnonly", "b;togglebandetect", "b;cullfarms"};
-	String visible[]={"b;about", "b;help", "b;invite", "b;userinfo", "b;report", "b;whitelist", "b;setnotifychannel", "b;togglewarnonly", "b;togglebandetect"};
+	String visible[]={"b;about", "b;help", "b;invite", "b;userinfo", "b;report", "b;whitelist", "b;setnotifychannel", "b;togglewarnonly", "b;togglebandetect", "b;kick", "b;ban"};
 	
 	public Boolean[] checkPerms(MessageReceivedEvent event, Permissions perm){
     	List<Boolean> out = new ArrayList<Boolean>();
@@ -397,7 +398,12 @@ public class AnnotationListener {
 					try {
 						String[] args = msg.split(" ");
 						Wini guildOptions = new Wini(new File("guildopts.ini"));
-						String[] thisGuildOptions = guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ");
+						String[] thisGuildOptions;
+						try {
+							thisGuildOptions = guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ");
+						} catch (NullPointerException e) {
+							thisGuildOptions = new String[]{"0","0","0"};
+						}
 						try {
 							if(event.getGuild().getChannelByID(Long.parseLong(args[1].replaceAll("[^\\d]",""))) == null) {
 								thisGuildOptions[0] = Long.toString(event.getChannel().getLongID());
@@ -429,7 +435,12 @@ public class AnnotationListener {
 				if(checkPerms(event,Permissions.MANAGE_CHANNELS)[0] || event.getAuthor().getStringID().equals("153353572711530496")){
 					try {
 						Wini guildOptions = new Wini(new File("guildopts.ini"));
-						String[] thisGuildOptions = guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ");
+						String[] thisGuildOptions;
+						try {
+							thisGuildOptions = guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ");
+						} catch (NullPointerException e) {
+							thisGuildOptions = new String[]{"0","0","0"};
+						}
 						if(thisGuildOptions[1].equals("0")) {
 							thisGuildOptions[1] = "1";
 						    guildOptions.put("Guilds", event.getGuild().getStringID(), thisGuildOptions[0] + " " + thisGuildOptions[1] + " " + thisGuildOptions[2]);
@@ -454,7 +465,12 @@ public class AnnotationListener {
 				if(checkPerms(event,Permissions.MANAGE_CHANNELS)[0] || event.getAuthor().getStringID().equals("153353572711530496")){
 					try {
 						Wini guildOptions = new Wini(new File("guildopts.ini"));
-						String[] thisGuildOptions = guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ");
+						String[] thisGuildOptions;
+						try {
+							thisGuildOptions = guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ");
+						} catch (NullPointerException e) {
+							thisGuildOptions = new String[]{"0","0","0"};
+						}
 						if(thisGuildOptions[2].equals("0")) {
 							thisGuildOptions[2] = "1";
 						    guildOptions.put("Guilds", event.getGuild().getStringID(), thisGuildOptions[0] + " " + thisGuildOptions[1] + " " + thisGuildOptions[2]);
@@ -512,7 +528,21 @@ public class AnnotationListener {
 													msg.split(" ")[2].length() + 2));
 											bannedUsers++;
 									if(thisGuildOptions[1].equals("0")){
+										justBanned.add(user.getStringID());
 										guild.banUser(user);
+										new Thread(new Runnable() {
+
+											@Override
+											public void run() {
+												try {
+													Thread.sleep(5000);
+												} catch (InterruptedException e) {
+													e.printStackTrace();
+												}
+												justBanned.remove(user.getStringID());
+											}
+											
+										}).start();
 									}
 								}
 								users.remove(0);
@@ -529,17 +559,25 @@ public class AnnotationListener {
 					if(checkPerms(event,Permissions.BAN)[2] == true){
 	    				try{
 	    					msg.split(" ")[2].length();
-	    					if(event.getMessage().getMentions().size() > 0)
-	    						event.getGuild().banUser(event.getMessage().getMentions().get(0),"[" + user.getName() + "#" + user.getDiscriminator() + "] " + msg.substring(6 + msg.split(" ")[1].length() + 1));
-	    					else
-	    						event.getGuild().banUser(event.getClient().getUserByID(Long.parseLong(msg.split(" ")[1])),"[" + user.getName() + "#" + user.getDiscriminator() + "] " + msg.substring(6 + msg.split(" ")[1].length() + 1));
+	    					if(event.getMessage().getMentions().size() > 0) {
+	    						event.getGuild().banUser(event.getMessage().getMentions().get(0),"[" + user.getName() + "#" + user.getDiscriminator() + "] "+ msg.split("<@!?\\d{17,18}>")[1]);
+	    						sendMessage(event.getChannel(),"Banned user.");
+	    					}
+	    					else {
+	    						event.getGuild().banUser(event.getClient().getUserByID(Long.parseLong(msg.split(" ")[1])),"[" + user.getName() + "#" + user.getDiscriminator() + "] " + msg.split("\\d{17,18}")[1]);
+	    						sendMessage(event.getChannel(),"Banned user.");
+	    					}
 	    				} catch(MissingPermissionsException e) {
 	    					sendMessage(event.getChannel(),"GlobalBans does not have permissions to ban users above it or equal to it in the heirarchy!");
 	    				} catch(Exception e){
-	    					if(event.getMessage().getMentions().size() > 0)
+	    					if(event.getMessage().getMentions().size() > 0) {
 	    						event.getGuild().banUser(event.getMessage().getMentions().get(0),"[" + user.getName() + "#" + user.getDiscriminator() + "] ");
-	    					else
-	    						event.getGuild().banUser(event.getClient().getUserByID(Long.parseLong(msg.split(" ")[1])),"[" + user.getName() + "#" + user.getDiscriminator() + "] ");    				
+	    						sendMessage(event.getChannel(),"Banned user.");
+	    					}
+	    					else {
+	    						event.getGuild().banUser(event.getClient().getUserByID(Long.parseLong(msg.split(" ")[1])),"[" + user.getName() + "#" + user.getDiscriminator() + "] ");
+	    						sendMessage(event.getChannel(),"Banned user.");
+	    					}
 	    				}
 	    			} else if(checkPerms(event,Permissions.BAN)[0] == false){
 	    				sendMessage(event.getChannel(), "You do not have permissions to ban!");
@@ -553,17 +591,25 @@ public class AnnotationListener {
 				if(checkPerms(event,Permissions.KICK)[2] == true){
     				try{
     					msg.split(" ")[2].length();
-    					if(event.getMessage().getMentions().size() > 0)
-    						event.getGuild().banUser(event.getMessage().getMentions().get(0),"[" + user.getName() + "#" + user.getDiscriminator() + "] " + msg.substring(6 + msg.split(" ")[1].length() + 1));
-    					else
-    						event.getGuild().banUser(event.getClient().getUserByID(Long.parseLong(msg.split(" ")[1])),"[" + user.getName() + "#" + user.getDiscriminator() + "] " + msg.substring(6 + msg.split(" ")[1].length() + 1));
+    					if(event.getMessage().getMentions().size() > 0) {
+    						event.getGuild().kickUser(event.getMessage().getMentions().get(0),"[" + user.getName() + "#" + user.getDiscriminator() + "] " + msg.split("<@!?\\d{17,18}>")[1]);
+    						sendMessage(event.getChannel(),"Kicked user.");
+    					}
+    					else {
+    						event.getGuild().kickUser(event.getClient().getUserByID(Long.parseLong(msg.split(" ")[1])),"[" + user.getName() + "#" + user.getDiscriminator() + "] " +msg.split("\\d{17,18}")[1]);
+    						sendMessage(event.getChannel(),"Kicked user.");
+    					}
     				} catch(MissingPermissionsException e) {
     					sendMessage(event.getChannel(),"GlobalBans does not have permissions to kick users above it or equal to it in the heirarchy!");
     				} catch(Exception e){
-    					if(event.getMessage().getMentions().size() > 0)
-    						event.getGuild().banUser(event.getMessage().getMentions().get(0),"[" + user.getName() + "#" + user.getDiscriminator() + "] ");
-    					else
-    						event.getGuild().banUser(event.getClient().getUserByID(Long.parseLong(msg.split(" ")[1])),"[" + user.getName() + "#" + user.getDiscriminator() + "] ");    				
+    					if(event.getMessage().getMentions().size() > 0) {
+    						event.getGuild().kickUser(event.getMessage().getMentions().get(0),"[" + user.getName() + "#" + user.getDiscriminator() + "] ");
+    						sendMessage(event.getChannel(),"Kicked user.");
+    					}
+    					else {
+    						event.getGuild().kickUser(event.getClient().getUserByID(Long.parseLong(msg.split(" ")[1])),"[" + user.getName() + "#" + user.getDiscriminator() + "] ");
+    						sendMessage(event.getChannel(),"Kicked user.");
+    					}
     				}
     			} else if(checkPerms(event,Permissions.KICK)[0] == false){
     				sendMessage(event.getChannel(), "You do not have permissions to kick!");
@@ -803,27 +849,44 @@ public class AnnotationListener {
 						}
 					} catch (NullPointerException e){
 						try{
-							if(bans.get("Bans",event.getUser().getStringID()).contains("\"")){
+							if(bans.get("Bans",event.getUser().getStringID()) != null){
 					    		if(!guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ")[1].equals("1")){
 					    			try {
-										event.getGuild().banUser(event.getUser(), bans.get("Bans", event.getUser().getLongID()));
+					    				justBanned.add(event.getUser().getStringID());
+										event.getGuild().banUser(event.getUser(), bans.get("Bans", event.getUser().getLongID()),1);
+										new Thread(new Runnable() {
+
+											@Override
+											public void run() {
+												try {
+													Thread.sleep(5000);
+												} catch (InterruptedException e) {
+													e.printStackTrace();
+												}
+												justBanned.remove(event.getUser().getStringID());
+											}
+											
+										}).start();
 									} catch (MissingPermissionsException e1) {
 										//cant ban, dont bother
 									}
 					    		}
 					    		String[] thisGuildOptions = guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ");
 						    	if(thisGuildOptions[0].equals("0")){
-						    		sendMessage(event.getGuild().getDefaultChannel(), "User " + event.getUser().getName() + "#" + event.getUser().getDiscriminator() +
-						        			" is banned by GlobalBans for " + bans.get("Bans", event.getUser().getLongID()));
+						    		sendMessage(event.getGuild().getDefaultChannel(), "User " + event.getUser().getName().replaceAll("discord.gg", "") + "#" + event.getUser().getDiscriminator() +
+						    				"("+event.getUser().getStringID()+")" + " is banned by GlobalBans for " + bans.get("Bans", event.getUser().getStringID()));
+						    		return;
 						    	}
 						    	else{
-						    		sendMessage(event.getGuild().getChannelByID(Long.parseLong(thisGuildOptions[0])), "User " + event.getUser().getName() + "#" + event.getUser().getDiscriminator() +
-						        			" is banned by GlobalBans for " + bans.get("Bans", event.getUser().getLongID()));
+						    		sendMessage(event.getGuild().getChannelByID(Long.parseLong(thisGuildOptions[0])), "User " + event.getUser().getName().replaceAll("discord.gg", "") + "#" + event.getUser().getDiscriminator() +
+						    				"("+event.getUser().getStringID()+")" + " is banned by GlobalBans for " + bans.get("Bans", event.getUser().getStringID()));
+						    		return;
 						    	}
 					    	}
 							else if(bans.get("Warns", event.getUser().getStringID()).contains("\"")){
-								sendMessage(event.getGuild().getDefaultChannel(), "User " + event.getUser().getName() + "#" + event.getUser().getDiscriminator() +
-					        			" has a warning in the GlobalBans System for " + bans.get("Warns", event.getUser().getLongID()));
+								sendMessage(event.getGuild().getDefaultChannel(), "User " + event.getUser().getName().replaceAll("discord.gg", "") + "#" + event.getUser().getDiscriminator() +
+					        			"("+event.getUser().getStringID()+")" + " has a warning in the GlobalBans System for " + bans.get("Warns", event.getUser().getStringID()));
+								return;
 							}
 						} catch(NullPointerException ex){
 							// user isnt beaned, do nothing
@@ -848,9 +911,76 @@ public class AnnotationListener {
 					guild.leave();
 					return;
 				}
+				if(event.getUser().getName().contains("discord.gg")) {
+					try {
+						Wini bans = new Wini(new File("bans.ini"));
+						Wini guildOptions = new Wini(new File("guildopts.ini"));
+						String[] thisGuildOptions;
+						bans.put("Bans",event.getUser().getStringID(),"(AUTOBAN) Invite in username");
+						bans.store();
+						List<IGuild> guilds = event.getClient().getGuilds();
+						int bannedUsers = 0;
+						while(guilds.size() > 0){
+							
+							guild = guilds.get(0);
+							try{
+								thisGuildOptions = guildOptions.get("Guilds", guild.getStringID()).split(" ");
+							} catch(Exception e){
+								thisGuildOptions = new String[] {guild.getDefaultChannel().getStringID(), "0","0"};
+							}
+							List<IUser> users = guild.getUsers();
+							while(users.size() > 0){
+								IUser user = (IUser) users.get(0);
+								if(user.getStringID().equals(event.getUser().getStringID())){
+									try {
+										sendMessage(event.getClient().getChannelByID(
+												Long.parseLong(thisGuildOptions[0])), "User " + 
+												event.getUser().getLongID() +" Is banned by GlobalBans for: (AUTOBAN) Invite in username.");
+									} catch (MissingPermissionsException e) {
+										for(IChannel i : event.getGuild().getChannels()) {
+											if(i.getModifiedPermissions(event.getClient().getOurUser()).contains(Permissions.SEND_MESSAGES)) {
+												try {
+													IMessage check = sendMessage(i, "Warning! Globalbans cannot send messages to the set notification channel! Please address this issue with b;setnotifychannel!");
+													if(check != null) {
+														break;
+													}
+												} catch(MissingPermissionsException e1) {
+													//cant send?
+												} 
+											}
+										}
+									}
+											bannedUsers++;
+									if(thisGuildOptions[1].equals("0")){
+										justBanned.add(user.getStringID());
+										guild.banUser(user,"(AUTOBAN) Invite in username.", 1);
+										new Thread(new Runnable() {
+
+											@Override
+											public void run() {
+												try {
+													Thread.sleep(5000);
+												} catch (InterruptedException e) {
+													e.printStackTrace();
+												}
+												justBanned.remove(user.getStringID());
+											}
+											
+										}).start();
+									}
+								}
+								users.remove(0);
+							}
+							guilds.remove(0);
+						}
+						sendMessage(event.getClient().getChannelByID(356298368919797760l),"Autoban report: " + event.getUser().getStringID() + " was banned for: invite in username. \n"
+								+ "Affected " + bannedUsers + " servers.");
+					} catch (IOException e ) {
+					}
+				}
 		    }
 		}; new Thread(r).start();
-    	
+		
     }
     @EventSubscriber
     public void onUserLeftG(UserLeaveEvent event ){
@@ -884,6 +1014,8 @@ public class AnnotationListener {
 				}
 				if(thisGuildOptions[2].equals("0")){
 					try {
+						if(justBanned.contains(event.getUser().getStringID())) return;
+						System.out.println(justBanned);
 						sendMessage(event.getGuild().getChannelByID(Long.parseLong(thisGuildOptions[0])), "GlobalBans Detected " + event.getUser().getName() + "#" 
 								+ event.getUser().getDiscriminator() + "(" + event.getUser().getStringID() + ")" + 
 								" Was banned from this server."
