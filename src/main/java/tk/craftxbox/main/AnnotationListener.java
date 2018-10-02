@@ -502,7 +502,7 @@ public class AnnotationListener {
 						Wini bans = new Wini(new File("bans.ini"));
 						Wini guildOptions = new Wini(new File("guildopts.ini"));
 						String[] thisGuildOptions;
-						bans.put("Bans",msg.split(" ")[1], msg.substring(msg.split(" ")[1].length() + msg.split(" ")[2].length() + 2));
+						bans.put("Bans",msg.split(" ")[1], msg.split("\\d{17,18}")[1]);
 						bans.store();
 						List<IGuild> guilds = event.getClient().getGuilds();
 						int bannedUsers = 0;
@@ -524,8 +524,7 @@ public class AnnotationListener {
 											Long.parseLong(thisGuildOptions[0])), "User " + 
 											user.getName() + "#" + user.getDiscriminator() + 
 											" Is banned by GlobalBans for " + 
-											msg.substring(msg.split(" ")[1].length() + 
-													msg.split(" ")[2].length() + 2));
+											msg.split("\\d{17,18}")[1]);
 											bannedUsers++;
 									if(thisGuildOptions[1].equals("0")){
 										justBanned.add(user.getStringID());
@@ -621,7 +620,7 @@ public class AnnotationListener {
 				try {
 					Wini bans = new Wini(new File("bans.ini"));
 					Wini guildOptions = new Wini(new File("guildopts.ini"));
-					bans.put("Warns",msg.split(" ")[1], msg.substring(msg.split(" ")[1].length() + msg.split(" ")[2].length() + 2));
+					bans.put("Warns",msg.split(" ")[1], msg.split("\\d{17,18}")[1]);
 					bans.store();
 					String[] thisGuildOptions;
 					int affected = 0;
@@ -639,7 +638,8 @@ public class AnnotationListener {
 							IUser user = (IUser) ul;
 							if(user.getStringID().equals(msg.split(" ")[1])){
 								IChannel channel = guild.getChannelByID(Long.parseLong(thisGuildOptions[0]));
-								sendMessage(channel, "User " + user.getName() + "#" + user.getDiscriminator() + " has a warning in the GlobalBans system for " + msg.substring(msg.split(" ")[1].length() + msg.split(" ")[2].length() + 2));
+								sendMessage(channel, "User " + user.getName() + "#" + user.getDiscriminator() + " has a warning in the GlobalBans system for "
+								+ msg.split("\\d{17,18}")[1]);
 								affected++;
 							}
 						}
