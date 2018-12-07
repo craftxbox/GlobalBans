@@ -115,7 +115,7 @@ public class AnnotationListener {
 			return;
 		}
     	if(msg.toLowerCase().startsWith("b;")){
-    		if(!Arrays.asList(commands).contains(cmd)){
+    		if(!commands.contains(cmd)){
         		//sendRespondMessage(event.getChannel(), "DEBUG: invalid command", event.getAuthor());
     			return;
     		}
