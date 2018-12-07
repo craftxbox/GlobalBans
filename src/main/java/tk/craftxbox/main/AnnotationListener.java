@@ -59,9 +59,8 @@ public class AnnotationListener {
 	Map<IUser,Integer> userMisuses = new HashMap<IUser,Integer>();
 	static List<String> blacklisted = new ArrayList<String>();
 	static List<String> justBanned = new ArrayList<String>();
-	String commands[]=
-		{"b;about", "b;help", "b;invite", "b;userinfo", "b;report", "b;ping", "b;recount", "b;leave", "b;getguild", "b;eval", "b;kick", "b;accept", "b;deny", "b;update",
-				"b;setnotifychannel", "b;report", "b;whitelist", "b;eval", "b;ban", "b;warn","b;togglewarnonly", "b;togglebandetect", "b;cullfarms"};
+	public static List<String> commands = new ArrayList<String>(Arrays.asList("b;about", "b;help", "b;invite", "b;userinfo", "b;report", "b;ping", "b;recount", "b;leave", "b;getguild", "b;eval", "b;kick", "b;accept", "b;deny", "b;update",
+				"b;setnotifychannel", "b;report", "b;whitelist", "b;eval", "b;ban", "b;warn","b;togglewarnonly", "b;togglebandetect", "b;cullfarms"));
 	String visible[]={"b;about", "b;help", "b;invite", "b;userinfo", "b;report", "b;whitelist", "b;setnotifychannel", "b;togglewarnonly", "b;togglebandetect", "b;kick", "b;ban"};
 	
 	public Boolean[] checkPerms(MessageReceivedEvent event, Permissions perm){
@@ -180,6 +179,14 @@ public class AnnotationListener {
 	    			} else {
 	    				mentioned = event.getMessage().getMentions().get(0);
 	    			}
+	    			Wini bans;
+	    			try {
+	    				bans = new Wini(new File("bans.ini"));
+	    			} catch(Exception e) {
+	    				sendMessageError(event.getChannel(),event,e,true);
+	    				sendMessage(event.getClient().getApplicationOwner().getOrCreatePMChannel(),"CRITICAL: failed to load bans database!");
+	    				return;
+	    			}
 	    			String nick = ifnull(mentioned.getDisplayName(event.getGuild()),"N/A");	
 	    			Instant joinTime;
 	    			try {
@@ -212,6 +219,12 @@ public class AnnotationListener {
 					em.appendField("Is Bot:", Boolean.toString(mentioned.isBot()), true);
 					em.appendField("Status:", mentioned.getPresence().getStatus().toString(), true);
 					em.appendField("ID:",mentioned.getStringID(),true);
+					if(bans.get("Bans", mentioned.getStringID()) != null) {
+						em.appendField("GlobalBans Listed","Banned", true);
+					}
+					if(bans.get("Warns", mentioned.getStringID()) != null) {
+						em.appendField("GlobalBans Listed","Warned", true);
+					}
 					em.appendField("Roles:", ifnull(mentioned.getRolesForGuild(event.getGuild()).toString(),"Not in server."), true);
 					sendMessage(event.getChannel(), em.build());
 	    		}
@@ -385,11 +398,9 @@ public class AnnotationListener {
 							sendRespondMessage(event.getChannel(), "Usage: b;whitelist <user id>", event.getAuthor());
 						}
 					}
-				} catch (InvalidFileFormatException e) {
+				} catch (Exception e) {
 					sendMessageError(event.getChannel(),event,e,true);
-					e.printStackTrace();
-				} catch (IOException e) {
-					sendMessageError(event.getChannel(),event,e,true);
+					sendMessage(event.getClient().getApplicationOwner().getOrCreatePMChannel(),"CRITICAL: failed to load bans database!");
 					e.printStackTrace();
 				}
 			}
@@ -514,7 +525,8 @@ public class AnnotationListener {
 							} catch(Exception e){
 								System.out.println(guildOptions.get("Guilds", guild.getLongID()));
 								System.out.println(guild.getName() + " " + guild.getLongID());
-								thisGuildOptions = new String[] {guild.getDefaultChannel().getStringID(), "1"};
+								if(guild.getChannels().size() < 1) guild.leave();
+								thisGuildOptions = new String[] {guild.getDefaultChannel().getStringID(), "0","0"};
 							}
 							List<IUser> users = guild.getUsers();
 							while(users.size() > 0){
@@ -632,7 +644,8 @@ public class AnnotationListener {
 						} catch(Exception e){
 							System.out.println(guildOptions.get("Guilds", guild.getLongID()));
 							System.out.println(guild.getName() + " " + guild.getLongID());
-							thisGuildOptions = new String[] {guild.getDefaultChannel().getStringID(), "1"};
+							if(guild.getChannels().size() < 1) guild.leave();
+							thisGuildOptions = new String[] {guild.getDefaultChannel().getStringID(), "0","0"};
 						}
 						for(Object ul : guild.getUsers()){
 							IUser user = (IUser) ul;
@@ -648,6 +661,7 @@ public class AnnotationListener {
 					
 				} catch (Exception e ) {
 					sendMessageError(event.getChannel(),event,e,true);
+					sendMessage(event.getClient().getApplicationOwner().getOrCreatePMChannel(),"CRITICAL: failed to load bans database!");
 				}
 			}
 			if(cmd.equalsIgnoreCase("b;eval") && event.getAuthor().getLongID() == 153353572711530496L){
@@ -905,7 +919,9 @@ public class AnnotationListener {
 							}
 						}
 					}
-				} catch (Exception e) {}
+				} catch (Exception e) {
+					sendMessage(event.getClient().getApplicationOwner().getOrCreatePMChannel(),"CRITICAL: failed to load bans database!");
+				}
 		    	IGuild guild = event.getGuild();
 				if((guild.getUsers().stream().filter(u -> u.isBot()).collect(Collectors.toList()).size() * 100.0f) / guild.getUsers().size() > 55f){
 					guild.leave();
@@ -926,6 +942,7 @@ public class AnnotationListener {
 							try{
 								thisGuildOptions = guildOptions.get("Guilds", guild.getStringID()).split(" ");
 							} catch(Exception e){
+								if(guild.getChannels().size() < 1) guild.leave();
 								thisGuildOptions = new String[] {guild.getDefaultChannel().getStringID(), "0","0"};
 							}
 							List<IUser> users = guild.getUsers();
@@ -975,7 +992,8 @@ public class AnnotationListener {
 						}
 						sendMessage(event.getClient().getChannelByID(356298368919797760l),"Autoban report: " + event.getUser().getStringID() + " was banned for: invite in username. \n"
 								+ "Affected " + bannedUsers + " servers.");
-					} catch (IOException e ) {
+					} catch (Exception e ) {
+						sendMessage(event.getClient().getApplicationOwner().getOrCreatePMChannel(),"CRITICAL: failed to load bans database!");
 					}
 				}
 		    }
