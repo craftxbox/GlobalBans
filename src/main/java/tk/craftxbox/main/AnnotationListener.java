@@ -55,8 +55,8 @@ public class AnnotationListener {
 	  
 	String instance = Double.toString(Math.random());
 	final static Logger logger = LoggerFactory.getLogger(AnnotationListener.class);
-	Map<IUser,Long> lastActionTime = new HashMap<IUser,Long>();
-	Map<IUser,Integer> userMisuses = new HashMap<IUser,Integer>();
+	Map<Long,Long> lastActionTime = new HashMap<>();
+	Map<Long,Integer> userMisuses = new HashMap<>();
 	static List<String> blacklisted = new ArrayList<String>();
 	static List<String> justBanned = new ArrayList<String>();
 	public static List<String> commands = new ArrayList<String>(Arrays.asList("b;about", "b;help", "b;invite", "b;userinfo", "b;report", "b;ping", "b;recount", "b;leave", "b;getguild", "b;eval", "b;kick", "b;accept", "b;deny", "b;update",
@@ -104,11 +104,11 @@ public class AnnotationListener {
     	String msg = event.getMessage().toString();
     	String cmd = msg.split(" ")[0];
     	Wini help;
-    	if(lastActionTime.get(event.getAuthor()) == null) {
-    		lastActionTime.put(event.getAuthor(), 0l);
+    	if(lastActionTime.get(event.getAuthor().getLongID()) == null) {
+    		lastActionTime.put(event.getAuthor().getLongID(), 0l);
     	}
-    	if(userMisuses.get(event.getAuthor()) == null) {
-    		userMisuses.put(event.getAuthor(), 0);
+    	if(userMisuses.get(event.getAuthor().getLongID()) == null) {
+    		userMisuses.put(event.getAuthor().getLongID(), 0);
     	}
     	
     	if(event.getAuthor().isBot()){
@@ -253,7 +253,7 @@ public class AnnotationListener {
     			sendMessage(event.getChannel(), em.build());
     		}
     		if(cmd.equalsIgnoreCase("b;report")){
-    			if(lastActionTime.get(event.getAuthor()) + 60000 < System.currentTimeMillis()) {
+    			if(lastActionTime.get(event.getAuthor().getLongID()) + 60000 < System.currentTimeMillis()) {
 	    			if(msg.split(" ").length > 2){
 	    				if(checkPerms(event,Permissions.KICK)[0] == true){
 	    					if(event.getMessage().getMentions().size() > 0) {
@@ -277,7 +277,7 @@ public class AnnotationListener {
 									}
 		    					}
 		    					sendMessage(event.getChannel(), "Successfully reported user " + event.getMessage().getMentions().get(0).getStringID() + ". Thank you.");
-		    					lastActionTime.put(event.getAuthor(), System.currentTimeMillis());
+		    					lastActionTime.put(event.getAuthor().getLongID(), System.currentTimeMillis());
 	    					} else {
 	    						try {
 	    							Long.parseLong(msg.split(" ")[1]);
@@ -304,7 +304,7 @@ public class AnnotationListener {
 									}
 		    					}
 		    					sendMessage(event.getChannel(), "Successfully reported user " + msg.split(" ")[1] + ". Thank you.");
-		    					lastActionTime.put(event.getAuthor(), System.currentTimeMillis());
+		    					lastActionTime.put(event.getAuthor().getLongID(), System.currentTimeMillis());
 	    					}
 	    				} else {
 	    					sendRespondMessage(event.getChannel(),"You do not have permission!",event.getAuthor());
@@ -313,8 +313,8 @@ public class AnnotationListener {
 	    				sendRespondMessage(event.getChannel(),"Not enough arguments! Usage: b;report <@ mention or id> <reason and proof>", event.getAuthor());
 	    			}
     			} else {
-    				if(userMisuses.get(event.getAuthor()) > 0) {
-    					if(userMisuses.get(event.getAuthor()) > 5) {
+    				if(userMisuses.get(event.getAuthor().getLongID()) > 0) {
+    					if(userMisuses.get(event.getAuthor().getLongID()) > 5) {
     						sendRespondMessage(event.getChannel(),"You have been Auto-Blacklisted for exceeding maximum misuses. This will expire in 2 hours",event.getAuthor());
     						Runnable r = new Runnable() {
     							public void run() {
@@ -328,14 +328,14 @@ public class AnnotationListener {
     						};
     						new Thread(r).start();
     					} else {
-    						sendRespondMessage(event.getChannel(),"You are being ratelimited! You are at " + userMisuses.get(event.getAuthor()) + " out of 5 misuses!",event.getAuthor());
-    						userMisuses.put(event.getAuthor(), userMisuses.get(event.getAuthor()) + 1);
+    						sendRespondMessage(event.getChannel(),"You are being ratelimited! You are at " + userMisuses.get(event.getAuthor().getLongID()) + " out of 5 misuses!",event.getAuthor());
+    						userMisuses.put(event.getAuthor().getLongID(), userMisuses.get(event.getAuthor().getLongID()) + 1);
     					}
     				} else {
     					sendRespondMessage(event.getChannel(),"You are being ratelimited!",event.getAuthor());
-    					userMisuses.put(event.getAuthor(), 1);
+    					userMisuses.put(event.getAuthor().getLongID(), 1);
     				}
-    				lastActionTime.put(event.getAuthor(), System.currentTimeMillis());
+    				lastActionTime.put(event.getAuthor().getLongID(), System.currentTimeMillis());
     			}
     		}
 			if(cmd.equalsIgnoreCase("b;whitelist")){
