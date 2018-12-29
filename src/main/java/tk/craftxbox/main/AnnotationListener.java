@@ -63,7 +63,7 @@ public class AnnotationListener {
 				"b;setnotifychannel", "b;report", "b;whitelist", "b;eval", "b;ban", "b;warn","b;togglewarnonly", "b;togglebandetect", "b;cullfarms"));
 	String visible[]={"b;about", "b;help", "b;invite", "b;userinfo", "b;report", "b;whitelist", "b;setnotifychannel", "b;togglewarnonly", "b;togglebandetect", "b;kick", "b;ban"};
 	
-	public Boolean[] checkPerms(MessageReceivedEvent event, Permissions perm){
+	public static Boolean[] checkPerms(MessageReceivedEvent event, Permissions perm){
     	List<Boolean> out = new ArrayList<Boolean>();
     	if(event.getAuthor().getPermissionsForGuild(event.getGuild()).contains(perm)){
     		out.add(true);
@@ -159,11 +159,11 @@ public class AnnotationListener {
 	    		}
 	    		if(cmd.equalsIgnoreCase("b;legal")){
 	    			sendMessage(event.getChannel(), "By having this bot in your discord server you agree that "
-	    					+ "\n(i) usage of this bot may be terminated at any time without warning."
+	    					+ "\n(i) usage of this bot may be terminated at any time without warning"
 	    					+ "\n(ii) bot usage, responses and errors may be logged"
 	    					+ "\n(iii) any data sent to the bot may be indefinately stored"
 	    					+ "\n(iv) staff of this bot may look through your discord guild to gather evidence on reports"
-	    					+ "\nNo warranty is provided for using this bot and I(craftxbox) disclaim responsibility for any damages that are caused as a result of use of this bot.");
+	    					+ "\nNo warranty is provided for using this bot and I(craftxbox) disclaim responsibility for any damages that are caused as a result of use of this bot");
 	    		}
 	    		if(cmd.equalsIgnoreCase("b;userinfo")){
 	    			IUser mentioned;
@@ -516,7 +516,7 @@ public class AnnotationListener {
 						bans.put("Bans",msg.split(" ")[1], msg.split("\\d{17,18}")[1]);
 						bans.store();
 						List<IGuild> guilds = event.getClient().getGuilds();
-						int bannedUsers = 0;
+						List<Long> bannedUsers = new ArrayList<>();
 						while(guilds.size() > 0){
 							
 							IGuild guild = guilds.get(0);
@@ -537,10 +537,12 @@ public class AnnotationListener {
 											user.getName() + "#" + user.getDiscriminator() + 
 											" Is banned by GlobalBans for " + 
 											msg.split("\\d{17,18}")[1]);
-											bannedUsers++;
+											bannedUsers.add(guild.getLongID());
 									if(thisGuildOptions[1].equals("0")){
 										justBanned.add(user.getStringID());
-										guild.banUser(user);
+										try {
+											guild.banUser(user);
+										} catch(MissingPermissionsException e) {}
 										new Thread(new Runnable() {
 
 											@Override
@@ -560,7 +562,8 @@ public class AnnotationListener {
 							}
 							guilds.remove(0);
 						}
-						sendMessage(event.getChannel(),"Ban affected " + bannedUsers + " Guilds");
+						sendMessage(event.getChannel(),"Ban affected " + bannedUsers.size() + " Guilds");
+						sendMessage(event.getClient().getChannelByID(526097580539641866l),event.getAuthor().getName() + " Banned " + msg.split(" ")[1] + " For " + msg.split(msg.split(" ")[1])[1] + "\n" + bannedUsers.toString());
 					} catch (Exception e ) {
 						sendMessageError(event.getChannel(),event,e,true);
 					}
@@ -635,7 +638,7 @@ public class AnnotationListener {
 					bans.put("Warns",msg.split(" ")[1], msg.split("\\d{17,18}")[1]);
 					bans.store();
 					String[] thisGuildOptions;
-					int affected = 0;
+					List<Long> affected = new ArrayList<>();
 					for(Object gl : event.getClient().getGuilds().toArray()){
 						
 						IGuild guild = (IGuild) gl;
@@ -653,11 +656,12 @@ public class AnnotationListener {
 								IChannel channel = guild.getChannelByID(Long.parseLong(thisGuildOptions[0]));
 								sendMessage(channel, "User " + user.getName() + "#" + user.getDiscriminator() + " has a warning in the GlobalBans system for "
 								+ msg.split("\\d{17,18}")[1]);
-								affected++;
+								affected.add(user.getLongID());
 							}
 						}
 					}
-					sendMessage(event.getChannel(), "Warn affected " + affected + "servers.");
+					sendMessage(event.getChannel(), "Warn affected " + affected.size() + " servers.");
+					sendMessage(event.getClient().getChannelByID(526097580539641866l),event.getAuthor().getName() + " Warned " + msg.split(" ")[1] + " For " + msg.split(msg.split(" ")[1])[1] + "\n" + affected.toString());
 					
 				} catch (Exception e ) {
 					sendMessageError(event.getChannel(),event,e,true);
@@ -700,7 +704,7 @@ public class AnnotationListener {
 				    }  
 				}.start();
     		}
-			if(cmd.equalsIgnoreCase("cullfarms") && event.getAuthor().getLongID() == 153353572711530496l){
+			if(cmd.equalsIgnoreCase("b;cullfarms") && event.getAuthor().getLongID() == 153353572711530496l){
 				Runnable r = new Runnable(){
 					public void run(){
 						List<String> out = new ArrayList<String>();
