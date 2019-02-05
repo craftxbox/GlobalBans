@@ -1,4 +1,4 @@
-package tk.craftxbox.main;
+package com.craftxbox.main;
 
 import java.awt.Color;
 import java.io.File;
@@ -682,7 +682,7 @@ public class AnnotationListener {
 		    				engine.put("Long", Long.class);
 		    				IMessage m = sendMessage(event.getChannel(),"Evaluating");
 		    				
-		    			    Object object = engine.eval("var cthis = Packages.tk.craftxbox.main.AnnotationListener;" + msg.substring(7));
+		    			    Object object = engine.eval("var cthis = Packages.com.craftxbox.main.AnnotationListener;" + msg.substring(7));
 		    			    if(object == null){
 		    			    	 m.edit("```[class java.lang.Object] null```");
 		    			    	 return;

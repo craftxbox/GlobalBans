@@ -1,4 +1,4 @@
-package tk.craftxbox.main;
+package com.craftxbox.main;
 
 import java.io.File;
 import javax.swing.JFrame;
@@ -50,12 +50,12 @@ public class Main extends JFrame{
 				Wini ini;
 				try {
 					ini = new Wini(new File("config.ini"));
-					tk.craftxbox.main.Main.txtRunning.setText("Starting");
-					tk.craftxbox.main.Main.disClient.logout();
-					tk.craftxbox.main.Main.disClient = null;
-					tk.craftxbox.main.Main.disClient = Main.createClient(ini.get("Config", "token"), true);
+					com.craftxbox.main.Main.txtRunning.setText("Starting");
+					com.craftxbox.main.Main.disClient.logout();
+					com.craftxbox.main.Main.disClient = null;
+					com.craftxbox.main.Main.disClient = Main.createClient(ini.get("Config", "token"), true);
 			        EventDispatcher dispatcher = disClient.getDispatcher(); // Gets the EventDispatcher instance for this client instance
-			        dispatcher.registerListener(new tk.craftxbox.main.AnnotationListener());
+			        dispatcher.registerListener(new com.craftxbox.main.AnnotationListener());
 				}
 			    catch(Exception e){
 			    	e.printStackTrace();
@@ -141,7 +141,7 @@ public class Main extends JFrame{
         try {
             if (login) {
             	IDiscordClient client = clientBuilder.login();
-            	tk.craftxbox.main.Main.textField_1.setText(Integer.toString(client.getShardCount()));
+            	com.craftxbox.main.Main.textField_1.setText(Integer.toString(client.getShardCount()));
                 return client;
                 
             } else {
