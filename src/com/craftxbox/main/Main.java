@@ -28,7 +28,7 @@ public class Main extends JFrame{
 		setSize(340, 100);
 		setResizable(false);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		setIconImage(Toolkit.getDefaultToolkit().getImage(Main.class.getResource("/globalbans.png")));
+		setIconImage(Toolkit.getDefaultToolkit().getImage(Main.class.getResource("globalbans.png")));
 		setTitle("Globalbans Administration Panel");
 		JPanel panel = new JPanel();
 		getContentPane().add(panel, BorderLayout.NORTH);
