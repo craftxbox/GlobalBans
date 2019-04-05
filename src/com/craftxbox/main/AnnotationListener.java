@@ -22,10 +22,15 @@ import java.util.stream.Collectors;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
-import org.ini4j.InvalidFileFormatException;
+import org.bson.Document;
 import org.ini4j.Wini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.ReplaceOptions;
 
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
@@ -51,10 +56,12 @@ import sx.blah.discord.util.DiscordException;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.MissingPermissionsException;
 
+
 public class AnnotationListener {
 	  
 	String instance = Double.toString(Math.random());
 	final static Logger logger = LoggerFactory.getLogger(AnnotationListener.class);
+	public static MongoDatabase db = MongoClients.create("mongodb://localhost:27017").getDatabase("gbans");
 	Map<Long,Long> lastActionTime = new HashMap<>();
 	Map<Long,Integer> userMisuses = new HashMap<>();
 	static List<String> blacklisted = new ArrayList<String>();
@@ -103,6 +110,7 @@ public class AnnotationListener {
     public void processCommand(MessageReceivedEvent event) {
     	String msg = event.getMessage().toString();
     	String cmd = msg.split(" ")[0];
+    	String[] args = msg.split(" ");
     	Wini help;
     	if(lastActionTime.get(event.getAuthor().getLongID()) == null) {
     		lastActionTime.put(event.getAuthor().getLongID(), 0l);
@@ -179,14 +187,7 @@ public class AnnotationListener {
 	    			} else {
 	    				mentioned = event.getMessage().getMentions().get(0);
 	    			}
-	    			Wini bans;
-	    			try {
-	    				bans = new Wini(new File("bans.ini"));
-	    			} catch(Exception e) {
-	    				sendMessageError(event.getChannel(),event,e,true);
-	    				sendMessage(event.getClient().getApplicationOwner().getOrCreatePMChannel(),"CRITICAL: failed to load bans database!");
-	    				return;
-	    			}
+	    			MongoCollection<Document> bans = db.getCollection("guilds");
 	    			String nick = ifnull(mentioned.getDisplayName(event.getGuild()),"N/A");	
 	    			Instant joinTime;
 	    			try {
@@ -219,11 +220,13 @@ public class AnnotationListener {
 					em.appendField("Is Bot:", Boolean.toString(mentioned.isBot()), true);
 					em.appendField("Status:", mentioned.getPresence().getStatus().toString(), true);
 					em.appendField("ID:",mentioned.getStringID(),true);
-					if(bans.get("Bans", mentioned.getStringID()) != null) {
-						em.appendField("GlobalBans Listed","Banned", true);
-					}
-					if(bans.get("Warns", mentioned.getStringID()) != null) {
-						em.appendField("GlobalBans Listed","Warned", true);
+					if(bans.find(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}")).first() != null) {
+						if(bans.find(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}")).first().getString("type").equals("ban")) {
+							em.appendField("GlobalBans Listed","Banned", true);
+						}
+						else if(bans.find(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}")).first().getString("type").equals("ban")) {
+							em.appendField("GlobalBans Listed","Warned", true);
+						}
 					}
 					em.appendField("Roles:", ifnull(mentioned.getRolesForGuild(event.getGuild()).toString(),"Not in server."), true);
 					sendMessage(event.getChannel(), em.build());
@@ -339,104 +342,59 @@ public class AnnotationListener {
     			}
     		}
 			if(cmd.equalsIgnoreCase("b;whitelist")){
-				try {
-					if(new File(event.getGuild().getStringID() + ".ini").exists()){
-						Wini guild = new Wini(new File(event.getGuild().getStringID() + ".ini"));
-						Wini bans = new Wini(new File("bans.ini"));
-						
-						if(msg.split(" ").length > 1){
-							IUser toWhitelist = event.getClient().getUserByID(Long.parseLong(msg.split(" " )[1]));
-							if(toWhitelist == null){
-								sendRespondMessage(event.getChannel(), "This user doesnt exist!", event.getAuthor());
-							} else{
-								try{
-									if(bans.get("Bans",msg.split(" ")[1]).contains("\"")){
-										System.out.println(bans.containsKey(msg.split(" ")[1]));
-										if(checkPerms(event,Permissions.KICK)[0] == true){
-											guild.put("Whitelist", msg.split(" ")[1], "whitelisted by " + event.getAuthor().getLongID() );
-											sendMessage(event.getChannel(), "Successfully whitelisted " + msg.split(" ")[1]);
-											guild.store();
-										} else{
-											sendRespondMessage(event.getChannel(), "You dont have the permission to do this!", event.getAuthor());
-										}
-									}
-								}catch(NullPointerException e){
-									sendRespondMessage(event.getChannel(), "This user isnt banned in the GlobalBan System!", event.getAuthor());
-									System.out.println(bans.containsKey(msg.split(" ")[1]) + " " + bans.get("Bans",msg.split(" ")[1]));
-								}
-							}
-						} else{
-							sendRespondMessage(event.getChannel(), "Usage: b;whitelist <user id>", event.getAuthor());
-						}
+				if(msg.split(" ").length > 1){
+					IUser toWhitelist = event.getClient().getUserByID(Long.parseLong(msg.split(" " )[1]));
+					if(toWhitelist == null){
+						sendRespondMessage(event.getChannel(), "This user doesnt exist!", event.getAuthor());
 					} else{
-						new File(event.getGuild().getStringID() + ".ini").createNewFile();
-						Wini guild = new Wini(new File(event.getGuild().getStringID() + ".ini"));
-						Wini bans = new Wini(new File("bans.ini"));
-						guild.add("Whitelist");
-						if(msg.split(" ").length > 1){
-							IUser toWhitelist = event.getClient().getUserByID(Long.parseLong(msg.split(" " )[1]));
-							if(toWhitelist == null){
-								sendRespondMessage(event.getChannel(), "This user doesnt exist!", event.getAuthor());
-							} else{
-								try{
-									if(bans.get("Bans",msg.split(" ")[1]).contains("\"")){
-										System.out.println(bans.containsKey(msg.split(" ")[1]));
-										if(checkPerms(event,Permissions.KICK)[0]){
-											guild.put("Whitelist", msg.split(" ")[1], "");
-											sendMessage(event.getChannel(), "Successfully whitelisted " + msg.split(" ")[1]);
-											guild.store();
-										} else{
-											sendRespondMessage(event.getChannel(), "You dont have the permission to do this!", event.getAuthor());
+						try{
+							if(db.getCollection("bans").find(Document.parse("{\"id\":\""+args[1]+"\"}")).first() != null){
+								if(checkPerms(event,Permissions.KICK)[0] == true){
+									if(db.getCollection("bans").find(Document.parse("{\"id\":\""+args[1]+"\"}")).first().getString("type").equals("ban")){
+										Document guildOpts = db.getCollection("guilds").find(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}")).first();
+										if(guildOpts.containsKey("whitelist")) {
+											@SuppressWarnings("unchecked")
+											ArrayList<String> whitelist = (ArrayList<String>) guildOpts.get("whitelist");
+											whitelist.add(args[1]);
+											guildOpts.put("whitelist", whitelist);
+										} else {
+											guildOpts.put("whitelist", Arrays.asList(new String[]{args[1]}));
 										}
+										sendMessage(event.getChannel(), "Successfully whitelisted " + msg.split(" ")[1]);
+									} else {
+										sendRespondMessage(event.getChannel(), "This user isnt banned in the GlobalBan System!", event.getAuthor());
 									}
-								}catch(Exception e){
-									sendRespondMessage(event.getChannel(), "This user isnt banned in the GlobalBan System!", event.getAuthor());
-									System.out.println(bans.containsKey(msg.split(" ")[1]) + " " + bans.get("Bans",msg.split(" ")[1]));
+								} else{
+									sendRespondMessage(event.getChannel(), "You dont have the permission to do this! (missing kick permissions)", event.getAuthor());
 								}
+							} else {
+								sendRespondMessage(event.getChannel(), "This user isnt banned in the GlobalBan System!", event.getAuthor());
 							}
-						} else{
-							sendRespondMessage(event.getChannel(), "Usage: b;whitelist <user id>", event.getAuthor());
+						}catch(NullPointerException e){
+							
 						}
 					}
-				} catch (Exception e) {
-					sendMessageError(event.getChannel(),event,e,true);
-					sendMessage(event.getClient().getApplicationOwner().getOrCreatePMChannel(),"CRITICAL: failed to load bans database!");
-					e.printStackTrace();
+				} else{
+					sendRespondMessage(event.getChannel(), "Usage: b;whitelist <user id>", event.getAuthor());
 				}
 			}
 			if(cmd.equalsIgnoreCase("b;setnotifychannel")){
 				if(checkPerms(event,Permissions.MANAGE_CHANNELS)[0]  || event.getAuthor().getStringID().equals("153353572711530496")){
+					Document guildOpts = db.getCollection("guilds").find(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}")).first();
 					try {
-						String[] args = msg.split(" ");
-						Wini guildOptions = new Wini(new File("guildopts.ini"));
-						String[] thisGuildOptions;
-						try {
-							thisGuildOptions = guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ");
-						} catch (NullPointerException e) {
-							thisGuildOptions = new String[]{"0","0","0"};
-						}
-						try {
-							if(event.getGuild().getChannelByID(Long.parseLong(args[1].replaceAll("[^\\d]",""))) == null) {
-								thisGuildOptions[0] = Long.toString(event.getChannel().getLongID());
-								return;
-							}
-							thisGuildOptions[0] = args[1].replaceAll("[^\\d]","");
-						} catch (NumberFormatException e) {
-							sendMessage(event.getChannel(),"That isnt a channel! Got:"+ args[1]);
+						if(event.getGuild().getChannelByID(Long.parseLong(args[1].replaceAll("[^\\d]",""))) == null) {
+							guildOpts.put("notifychannel", Long.toString(event.getChannel().getLongID()));
 							return;
-						} catch (IndexOutOfBoundsException e) {
-							thisGuildOptions[0] = Long.toString(event.getChannel().getLongID());
 						}
-					    guildOptions.put("Guilds", event.getGuild().getStringID(), thisGuildOptions[0] + " " + thisGuildOptions[1] + " " + thisGuildOptions[2]);
-					    guildOptions.store();
-					    sendMessage(event.getChannel(), "Successfully set the Notification Channel to " + event.getGuild().getChannelByID(Long.parseLong(thisGuildOptions[0])));
-					} catch (InvalidFileFormatException e) {
-						sendMessageError(event.getChannel(),event,e,true);
-						e.printStackTrace();
-					} catch (IOException e) {
-						sendMessageError(event.getChannel(),event,e,true);
-						e.printStackTrace();
+						guildOpts.put("notifychannel",args[1].replaceAll("[^\\d]",""));
+					} catch (NumberFormatException e) {
+						sendMessage(event.getChannel(),"That isnt a channel! Got:"+ args[1]);
+						return;
+					} catch (IndexOutOfBoundsException e) {
+						guildOpts.put("notifychannel", Long.toString(event.getChannel().getLongID()));
 					}
+				    db.getCollection("guilds").replaceOne(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}"), guildOpts);
+				    sendMessage(event.getChannel(), "Successfully set the Notification Channel to " + event.getGuild().getChannelByID(Long.parseLong(guildOpts.getString("notifychannel"))));
 				} else {
 					sendMessage(event.getChannel(), "You do not have permission! (missing manage channels)");
 					return;
@@ -444,28 +402,15 @@ public class AnnotationListener {
 			}
 			if(cmd.equalsIgnoreCase("b;togglewarnonly")){
 				if(checkPerms(event,Permissions.MANAGE_CHANNELS)[0] || event.getAuthor().getStringID().equals("153353572711530496")){
-					try {
-						Wini guildOptions = new Wini(new File("guildopts.ini"));
-						String[] thisGuildOptions;
-						try {
-							thisGuildOptions = guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ");
-						} catch (NullPointerException e) {
-							thisGuildOptions = new String[]{"0","0","0"};
-						}
-						if(thisGuildOptions[1].equals("0")) {
-							thisGuildOptions[1] = "1";
-						    guildOptions.put("Guilds", event.getGuild().getStringID(), thisGuildOptions[0] + " " + thisGuildOptions[1] + " " + thisGuildOptions[2]);
-						    guildOptions.store();
-						    sendMessage(event.getChannel(), "Successfully set the bot to Warn Only Mode");
-						} else {
-							thisGuildOptions[1] = "0";
-						    guildOptions.put("Guilds", event.getGuild().getStringID(), thisGuildOptions[0] + " " + thisGuildOptions[1] + " " + thisGuildOptions[2]);
-						    guildOptions.store();
-						    sendMessage(event.getChannel(), "Successfully set the bot to Ban Mode");
-						}
-					} catch (Exception e ) {
-						sendMessageError(event.getChannel(),event,e,true);
+					Document guildOpts = db.getCollection("guilds").find(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}")).first();
+					if(!guildOpts.getBoolean("warnonly", false)) {
+						guildOpts.put("warnonly", true);
+					    sendMessage(event.getChannel(), "Successfully set the bot to Warn Only Mode");
+					} else {
+						guildOpts.put("warnonly", false);
+					    sendMessage(event.getChannel(), "Successfully set the bot to Ban Mode");
 					}
+					db.getCollection("guilds").replaceOne(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}"), guildOpts);
 				}
 				else {
 					sendMessage(event.getChannel(), "You do not have permission! (missing manage channels)");
@@ -474,32 +419,15 @@ public class AnnotationListener {
 			}
 			if(cmd.equalsIgnoreCase("b;togglebandetect")){
 				if(checkPerms(event,Permissions.MANAGE_CHANNELS)[0] || event.getAuthor().getStringID().equals("153353572711530496")){
-					try {
-						Wini guildOptions = new Wini(new File("guildopts.ini"));
-						String[] thisGuildOptions;
-						try {
-							thisGuildOptions = guildOptions.get("Guilds", event.getGuild().getStringID()).split(" ");
-						} catch (NullPointerException e) {
-							thisGuildOptions = new String[]{"0","0","0"};
-						}
-						if(thisGuildOptions[2].equals("0")) {
-							thisGuildOptions[2] = "1";
-						    guildOptions.put("Guilds", event.getGuild().getStringID(), thisGuildOptions[0] + " " + thisGuildOptions[1] + " " + thisGuildOptions[2]);
-						    guildOptions.store();
-						    sendMessage(event.getChannel(), "Successfully turned Ban detection off.");
-						} else {
-							thisGuildOptions[2] = "0";
-						    guildOptions.put("Guilds", event.getGuild().getStringID(), thisGuildOptions[0] + " " + thisGuildOptions[1] + " " + thisGuildOptions[2]);
-						    guildOptions.store();
-						    sendMessage(event.getChannel(), "Successfully turned Ban detection on.");
-						}
-					} catch (InvalidFileFormatException e) {
-				
-						e.printStackTrace();
-					} catch (IOException e) {
-				
-						e.printStackTrace();
+					Document guildOpts = db.getCollection("guilds").find(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}")).first();
+					if(!guildOpts.getBoolean("bandetect", false)) {
+						guildOpts.put("bandetect", true);
+					    sendMessage(event.getChannel(), "Successfully turned Ban detection off.");
+					} else {
+						guildOpts.put("warnonly", false);
+					    sendMessage(event.getChannel(), "Successfully turned Ban detection on.");
 					}
+					db.getCollection("guilds").replaceOne(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}"), guildOpts);
 				}
 				else {
 					sendMessage(event.getChannel(), "You do not have permission! (missing manage channels)");
@@ -510,35 +438,25 @@ public class AnnotationListener {
 			if(cmd.equalsIgnoreCase("b;ban")){
 				if(event.getAuthor().getStringID().equals("153353572711530496")) {
 					try {
-						Wini bans = new Wini(new File("bans.ini"));
-						Wini guildOptions = new Wini(new File("guildopts.ini"));
-						String[] thisGuildOptions;
-						bans.put("Bans",msg.split(" ")[1], msg.split("\\d{17,18}")[1]);
-						bans.store();
+						Document bannedUser = Document.parse("{\"id\":\""+args[1]+"\",\"type\":\"ban\",\"\":\""+msg.split(args[1]+" ")[1]+"\"}");
+						db.getCollection("bans").replaceOne(Document.parse(""),bannedUser,new ReplaceOptions().upsert(true));
 						List<IGuild> guilds = event.getClient().getGuilds();
 						List<Long> bannedUsers = new ArrayList<>();
 						while(guilds.size() > 0){
 							
 							IGuild guild = guilds.get(0);
-							try{
-								thisGuildOptions = guildOptions.get("Guilds", guild.getStringID()).split(" ");
-							} catch(Exception e){
-								System.out.println(guildOptions.get("Guilds", guild.getLongID()));
-								System.out.println(guild.getName() + " " + guild.getLongID());
-								if(guild.getChannels().size() < 1) guild.leave();
-								thisGuildOptions = new String[] {guild.getDefaultChannel().getStringID(), "0","0"};
-							}
+							Document guildOpts = db.getCollection("guilds").find(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}")).first();
 							List<IUser> users = guild.getUsers();
 							while(users.size() > 0){
 								IUser user = (IUser) users.get(0);
 								if(user.getStringID().equals(msg.split(" ")[1])){
 									sendMessage(event.getClient().getChannelByID(
-											Long.parseLong(thisGuildOptions[0])), "User " + 
+											Long.parseLong(guildOpts.getString("notifychannel"))), "User " + 
 											user.getName() + "#" + user.getDiscriminator() + 
 											" Is banned by GlobalBans for " + 
 											msg.split("\\d{17,18}")[1]);
 											bannedUsers.add(guild.getLongID());
-									if(thisGuildOptions[1].equals("0")){
+									if(!guildOpts.getBoolean("warnonly", false)){
 										justBanned.add(user.getStringID());
 										try {
 											guild.banUser(user);
@@ -634,26 +552,17 @@ public class AnnotationListener {
 			if(cmd.equalsIgnoreCase("b;warn") && event.getAuthor().getStringID().equals("153353572711530496")){
 				try {
 					Wini bans = new Wini(new File("bans.ini"));
-					Wini guildOptions = new Wini(new File("guildopts.ini"));
 					bans.put("Warns",msg.split(" ")[1], msg.split("\\d{17,18}")[1]);
 					bans.store();
-					String[] thisGuildOptions;
 					List<Long> affected = new ArrayList<>();
 					for(Object gl : event.getClient().getGuilds().toArray()){
 						
 						IGuild guild = (IGuild) gl;
-						try{
-							thisGuildOptions = guildOptions.get("Guilds", guild.getStringID()).split(" ");
-						} catch(Exception e){
-							System.out.println(guildOptions.get("Guilds", guild.getLongID()));
-							System.out.println(guild.getName() + " " + guild.getLongID());
-							if(guild.getChannels().size() < 1) guild.leave();
-							thisGuildOptions = new String[] {guild.getDefaultChannel().getStringID(), "0","0"};
-						}
+						Document guildOpts = db.getCollection("guilds").find(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}")).first();
 						for(Object ul : guild.getUsers()){
 							IUser user = (IUser) ul;
 							if(user.getStringID().equals(msg.split(" ")[1])){
-								IChannel channel = guild.getChannelByID(Long.parseLong(thisGuildOptions[0]));
+								IChannel channel = guild.getChannelByID(Long.parseLong(guildOpts.getString("notifychannel")));
 								sendMessage(channel, "User " + user.getName() + "#" + user.getDiscriminator() + " has a warning in the GlobalBans system for "
 								+ msg.split("\\d{17,18}")[1]);
 								affected.add(user.getLongID());
@@ -725,7 +634,6 @@ public class AnnotationListener {
 				new Thread(r).start();
 			}
 			if(cmd.equalsIgnoreCase("b;deny")  && event.getAuthor().getLongID() == 153353572711530496l){
-				String[] args = msg.split(" ");
 				if((args.length >= 3)) {
 					IUser user = event.getClient().fetchUser(Long.parseLong(args[2]));
 					sendMessage(event.getClient().getChannelByID(Long.parseLong(args[1])),
@@ -734,7 +642,6 @@ public class AnnotationListener {
 				}
 			}
 			if(cmd.equalsIgnoreCase("b;update")  && event.getAuthor().getLongID() == 153353572711530496l){
-				String[] args = msg.split(" ");
 				if((args.length >= 3)) {
 					IUser user = event.getClient().fetchUser(Long.parseLong(args[2]));
 					sendMessage(event.getClient().getChannelByID(Long.parseLong(args[1])),
@@ -743,7 +650,6 @@ public class AnnotationListener {
 				}
 			}
 			if(cmd.equalsIgnoreCase("b;accept")  && event.getAuthor().getLongID() == 153353572711530496l){
-				String[] args = msg.split(" ");
 				if((args.length >= 3)) {
 					IUser user = event.getClient().fetchUser(Long.parseLong(args[2]));
 					sendMessage(event.getClient().getChannelByID(Long.parseLong(args[1])),
@@ -777,9 +683,8 @@ public class AnnotationListener {
     		Runnable r = new Runnable() {
     				public void run() {
 			    		try {
-							Wini guildOptions = new Wini(new File("guildopts.ini"));
-							Wini options = new Wini(new File("config.ini"));
-							if(!options.get("Config", "joinedservers").contains(event.getGuild().getStringID())){
+			    			Document guildOpts = db.getCollection("guilds").find(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}")).first();
+							if(guildOpts == null){
 								IGuild guild = event.getGuild();
 								if((guild.getUsers().stream().filter(u -> u.isBot()).collect(Collectors.toList()).size() * 100.0f) / guild.getUsers().size() > 55f){
 			        				guild.leave();
@@ -796,10 +701,9 @@ public class AnnotationListener {
 								em.appendField("Owner", guild.getOwner().getName() + "#" + guild.getOwner().getDiscriminator(), true);
 								em.appendField("ID", Long.toString(guild.getLongID()), true);
 								sendMessage(event.getClient().getChannelByID(330218133707292672L), em.build());
-								guildOptions.put("Guilds", Long.toString(event.getGuild().getLongID()), event.getGuild().getDefaultChannel().getStringID() + " 0 0");
-								guildOptions.store();
-								options.put("Config", "joinedservers", options.get("Config", "joinedservers") + "," + event.getGuild().getStringID());
-								options.store();
+								guildOpts = new Document();
+								guildOpts.put("id", event.getGuild().getStringID());
+								db.getCollection("guilds").insertOne(guildOpts);
 								sendMessage(event.getGuild().getDefaultChannel(), "To set the channel you want this bot to notify to, run b;setnotifychannel in the channel you want to set it to."
 										+ "\nRun b;togglewarnonly to toggle if you want the bot to auto-ban or not."
 										+ "\nUse b;whitelist <User ID> to whitelist banned users from the auto ban."
@@ -842,7 +746,7 @@ public class AnnotationListener {
 					em.appendField("Bot Percentage", "%" + Float.toString((guild.getUsers().stream().filter(u -> u.isBot()).collect(Collectors.toList()).size() * 100.0f) / guild.getUsers().size()), true );
 					em.withColor(Color.red);
 					em.appendField("ID", Long.toString(guild.getLongID()), true);
-					em.appendField("Deleted", Boolean.toString(event.getGuild().isDeleted()), true);
+					db.getCollection("guilds").deleteOne(Document.parse("{\"id\":"+event.getGuild().getStringID()+"}"));
 					sendMessage(event.getClient().getChannelByID(330218133707292672L), em.build());
 		    	}
 			}
