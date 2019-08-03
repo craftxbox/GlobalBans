@@ -184,7 +184,7 @@ public class AnnotationListener {
 				} else {
 					mentioned = event.getMessage().getMentions().get(0);
 				}
-				MongoCollection<Document> bans = db.getCollection("guilds");
+				MongoCollection<Document> bans = db.getCollection("bans");
 				String nick = ifnull(mentioned.getDisplayName(event.getGuild()),"N/A");	
 				Instant joinTime;
 				try {
