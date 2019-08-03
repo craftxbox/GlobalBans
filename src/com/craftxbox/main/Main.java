@@ -143,10 +143,8 @@ public class Main extends JFrame{
             	IDiscordClient client = clientBuilder.login();
             	com.craftxbox.main.Main.textField_1.setText(Integer.toString(client.getShardCount()));
                 return client;
-                
-            } else {
-                return clientBuilder.build();
             }
+			return clientBuilder.build();
         } catch (DiscordException e) {
             e.printStackTrace();
             return null;
