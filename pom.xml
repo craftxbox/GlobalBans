@@ -3,20 +3,21 @@
   <groupId>discord-globalbans</groupId>
   <artifactId>discord-globalbans</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  <properties>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.testTarget>11</maven.compiler.testTarget>
+        <maven.compiler.testSource>11</maven.compiler.testSource>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
   <repositories>
-  <repository> <!-- This repo fixes issues with transitive dependencies -->
-    <id>jcenter</id>
-    <url>http://jcenter.bintray.com</url>
-  </repository>
-  <repository>
-    <id>jitpack.io</id>
-    <url>https://jitpack.io</url>
-  </repository>
     <repository>
     <id>central</id>
     <name>bintray</name>
     <url>http://jcenter.bintray.com</url>
   </repository>
+  
   
 </repositories>
   <build>
@@ -38,11 +39,6 @@
 	  <artifactId>logback-classic</artifactId>
 	  <version>1.0.13</version>
 	</dependency>
-	  <dependency>
-    <groupId>com.github.austinv11</groupId>
-    <artifactId>Discord4J</artifactId> <!-- Include this line if you want a shaded jar (all the Discord4J dependencies bundled into one jar)-->
-    <version>2.10.1</version>
-	  </dependency>
     	<dependency>
   		<groupId>org.ini4j</groupId>
   		<artifactId>ini4j</artifactId>
@@ -57,6 +53,11 @@
   		<groupId>org.mongodb</groupId>
   		<artifactId>mongodb-driver-sync</artifactId>
   		<version>3.9.1</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>com.discord4j</groupId>
+  		<artifactId>discord4j-core</artifactId>
+  		<version>3.0.11</version>
   	</dependency>
   </dependencies>
 </project>

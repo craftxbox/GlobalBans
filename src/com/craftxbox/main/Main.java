@@ -1,155 +1,102 @@
 package com.craftxbox.main;
 
-import java.awt.BorderLayout;
-import java.awt.Font;
-import java.awt.Toolkit;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.IOException;
 
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.swing.JTextPane;
 
+import org.ini4j.InvalidFileFormatException;
 import org.ini4j.Wini;
 
-import sx.blah.discord.api.ClientBuilder;
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventDispatcher;
-import sx.blah.discord.util.DiscordException;
+import discord4j.core.DiscordClient;
+import discord4j.core.DiscordClientBuilder;
+import discord4j.core.event.domain.lifecycle.ReadyEvent;
+import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.TextChannel;
+import discord4j.core.object.presence.Activity;
+import discord4j.core.object.presence.Presence;
+import discord4j.core.object.util.Snowflake;
 
 public class Main extends JFrame{
-	
-	public static IDiscordClient disClient;
 	public Main() {
-		setSize(340, 100);
-		setResizable(false);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		setIconImage(Toolkit.getDefaultToolkit().getImage(Main.class.getResource("globalbans.png")));
 		setTitle("Globalbans Administration Panel");
-		JPanel panel = new JPanel();
-		getContentPane().add(panel, BorderLayout.NORTH);
-		JButton btnLogs = new JButton("Logs");
-		btnLogs.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent arg0) {
-				JDialog dialog = new JDialog();
-				JPanel diapanel = new JPanel();
-				dialog.setSize(640, 480);
-				dialog.getContentPane().add(diapanel, BorderLayout.CENTER);
-				dialog.setVisible(true);
-			}
-		});
+		getContentPane().setLayout(null);
+		setBounds(300, 300, 320, 130);
+		setResizable(false);
+		
 		JButton btnRestart = new JButton("Restart");
-		btnRestart.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent arg0) {
-				Wini ini;
-				try {
-					ini = new Wini(new File("config.ini"));
-					com.craftxbox.main.Main.txtRunning.setText("Starting");
-					com.craftxbox.main.Main.disClient.logout();
-					com.craftxbox.main.Main.disClient = null;
-					com.craftxbox.main.Main.disClient = Main.createClient(ini.get("Config", "token"), true);
-			        EventDispatcher dispatcher = disClient.getDispatcher(); // Gets the EventDispatcher instance for this client instance
-			        dispatcher.registerListener(new com.craftxbox.main.AnnotationListener());
-				}
-			    catch(Exception e){
-			    	e.printStackTrace();
-			    	txtRunning.setText("Errored");
-			    }
-			}
-		});
-		panel.add(btnRestart);
-		panel.add(btnLogs);
+		btnRestart.setBounds(10, 11, 89, 23);
+		getContentPane().add(btnRestart);
+		
+		JButton btnLogs = new JButton("Logs");
+		btnLogs.setBounds(109, 11, 89, 23);
+		getContentPane().add(btnLogs);
 		
 		JButton btnExit = new JButton("Exit");
-		btnExit.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent arg0) {
-				System.exit(0);
-			}
-		});
-		panel.add(btnExit);
+		btnExit.setBounds(208, 11, 89, 23);
+		getContentPane().add(btnExit);
 		
-		JPanel panel_1 = new JPanel();
-		getContentPane().add(panel_1, BorderLayout.SOUTH);
+		JTextPane serverStatus = new JTextPane();
+		serverStatus.setText("Unconnected");
+		serverStatus.setBounds(10, 45, 89, 20);
+		getContentPane().add(serverStatus);
 		
-		JLabel lblStatus = new JLabel("Status:");
-		panel_1.add(lblStatus);
+		JTextPane connectionStatus = new JTextPane();
+		connectionStatus.setText("Disconnected");
+		connectionStatus.setBounds(208, 45, 89, 20);
+		getContentPane().add(connectionStatus);
 		
-		txtRunning = new JTextField();
-		txtRunning.setFont(new Font("Tahoma", Font.PLAIN, 11));
-		txtRunning.setColumns(4);
-		txtRunning.setText("Starting");
-		panel_1.add(txtRunning);
-		txtRunning.setEditable(false);
+		JTextPane errors = new JTextPane();
+		errors.setText("No Errors");
+		errors.setBounds(109, 45, 89, 20);
+		errors.setEditable(false);
+		getContentPane().add(errors);
 		
-		JLabel lblGuilds = new JLabel("Guilds:");
-		panel_1.add(lblGuilds);
+		JLabel lblNewLabel = new JLabel("Servers");
+		lblNewLabel.setBounds(10, 68, 89, 14);
+		getContentPane().add(lblNewLabel);
 		
-		textField = new JTextField();
-		textField.setText("0");
-		textField.setEditable(false);
-		panel_1.add(textField);
-		textField.setColumns(4);
+		JLabel lblErrors = new JLabel("Errors");
+		lblErrors.setBounds(109, 68, 89, 14);
+		getContentPane().add(lblErrors);
 		
-		JLabel lblShards = new JLabel("Shards:");
-		panel_1.add(lblShards);
-		
-		textField_1 = new JTextField();
-		textField_1.setEditable(false);
-		textField_1.setText("0");
-		panel_1.add(textField_1);
-		textField_1.setColumns(5);
-
+		JLabel lblStatus = new JLabel("Status");
+		lblStatus.setBounds(208, 68, 89, 14);
+		getContentPane().add(lblStatus);
 	}
-	private static final long serialVersionUID = 1L;
-	public static JTextField txtRunning;
-	public static JTextField textField;
-	private static JTextField textField_1;
-	public static void main(String[] args) {
+	
+	static DiscordClient client;
+	static AnnotationListener listener;
+	private static String instance = Double.toString(Math.random());
+	
+	public static void main(String[] args) throws InvalidFileFormatException, IOException {
 		Main main = new Main();
-		Wini ini;
-		try {
-			ini = new Wini(new File("config.ini"));
-			try{
-				System.out.println("-------------------------");
-		        disClient = Main.createClient(ini.get("Config", "token"), true);
-		        EventDispatcher dispatcher = disClient.getDispatcher();
-		        dispatcher.registerListener(new AnnotationListener());
-		        main.setVisible(true);
-			}catch(DiscordException e){
-				e.printStackTrace();
-				txtRunning.setText("Errored");
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
+		main.setVisible(true);
+		Wini config = new Wini(new File("config.ini"));
+		startClient(config.get("config", "token"));
 	}
-    public static IDiscordClient createClient(String token, boolean login) {
-        ClientBuilder clientBuilder = new ClientBuilder();
-        clientBuilder
-	    	.withToken(token)
-	    	.withRecommendedShardCount()
-	    	.setMaxMessageCacheCount(0)
-	    	.setMaxReconnectAttempts(100000);
-        try {
-            if (login) {
-            	IDiscordClient client = clientBuilder.login();
-            	com.craftxbox.main.Main.textField_1.setText(Integer.toString(client.getShardCount()));
-                return client;
-            }
-			return clientBuilder.build();
-        } catch (DiscordException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
+	
+	public static void startClient(String token) {
+		client = new DiscordClientBuilder(token).build();
+		client.getEventDispatcher().on(MessageCreateEvent.class).subscribe(event ->{
+			listener.onMessageReceive(event);
+		});
+		client.getEventDispatcher().on(ReadyEvent.class).subscribe(event ->{
+			client.updatePresence(Presence.online(Activity.watching(client.getGuilds().count().block()+" Servers | b;help")));
+			client.getChannelById(Snowflake.of("322462068475428864")).subscribe(chan ->{
+				TextChannel tchan = (TextChannel) chan;
+				tchan.createMessage("b;kill "+instance);
+			});
+		});
+	}
+	
+	public static void stopClient() {
+		client.logout().block();
+		client = null;
+	}
 }
 
