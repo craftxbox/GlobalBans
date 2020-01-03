@@ -81,3 +81,7 @@ target/
 .cache-main
 .scala_dependencies
 .worksheet
+
+# IntelliJ IDE Specific
+.idea/
+*.iml
