@@ -5,6 +5,7 @@ import com.craftxbox.globalbans.command.user.AboutCommand;
 import com.craftxbox.globalbans.command.user.LegalCommand;
 import com.craftxbox.globalbans.command.user.PingCommand;
 import com.craftxbox.globalbans.listener.BotFarmChecker;
+import com.craftxbox.globalbans.listener.ServerJoinDM;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.EventDispatcher;
@@ -73,6 +74,7 @@ public class GlobalBans {
 		EventDispatcher eventDispatcher = discordClient.getEventDispatcher();
 
 		eventDispatcher.on(GuildCreateEvent.class).flatMap(e -> new BotFarmChecker().checkServer(e.getGuild())).subscribe();
+		eventDispatcher.on(GuildCreateEvent.class).flatMap(e -> new ServerJoinDM().onJoin(e.getGuild())).subscribe();
 
 		CommandHandler commandHandler = new CommandHandler(discordClient, botProperties.getProperty("bot.core.prefix"));
 		commandHandler.registerCommand("ping", new PingCommand());
