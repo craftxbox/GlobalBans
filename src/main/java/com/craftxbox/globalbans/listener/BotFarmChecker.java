@@ -1,6 +1,7 @@
 package com.craftxbox.globalbans.listener;
 
 import discord4j.core.object.entity.Guild;
+import discord4j.core.object.util.Snowflake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -11,6 +12,10 @@ public class BotFarmChecker {
 
     public Mono<Void> checkServer(Guild guild) {
         int guildMemberCount = guild.getMemberCount().orElseGet(() -> 1);
+
+        if (guild.getId().equals(Snowflake.of(474454649370312704L))) {
+            return Mono.empty();
+        }
 
         return guild.getMembers()
                 .filter(m -> !m.isBot())
