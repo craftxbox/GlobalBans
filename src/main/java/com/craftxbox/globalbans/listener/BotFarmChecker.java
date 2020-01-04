@@ -13,7 +13,7 @@ public class BotFarmChecker {
     public Mono<Void> checkServer(Guild guild) {
         int guildMemberCount = guild.getMemberCount().orElseGet(() -> 1);
 
-        if (guild.getId().equals(Snowflake.of(474454649370312704L))) {
+        if (guildMemberCount < 25 || guild.getId().equals(Snowflake.of(474454649370312704L))) {
             return Mono.empty();
         }
 
