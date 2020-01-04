@@ -1,7 +1,6 @@
 package com.craftxbox.globalbans.command;
 
 import discord4j.core.DiscordClient;
-import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
@@ -66,8 +65,7 @@ public class CommandHandler {
                             .flatMap(permissions -> findCommand(commandName)
                                     .flatMap(command -> message.getAuthorAsMember()
                                             .flatMap(member -> processArgs(commandExploded)
-                                                    .flatMap(args -> command.handleCommand(member, message, channel, args))))))
-                    .onErrorContinue((__, ___) -> {});
+                                                    .flatMap(args -> command.handleCommand(member, message, channel, args))))));
         }
 
         return Mono.empty();
