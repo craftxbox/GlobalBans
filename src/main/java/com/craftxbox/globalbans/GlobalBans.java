@@ -1,6 +1,7 @@
 package com.craftxbox.globalbans;
 
 import com.craftxbox.globalbans.command.CommandHandler;
+import com.craftxbox.globalbans.command.user.AboutCommand;
 import com.craftxbox.globalbans.command.user.LegalCommand;
 import com.craftxbox.globalbans.command.user.PingCommand;
 import com.craftxbox.globalbans.listener.BotFarmChecker;
@@ -75,6 +76,7 @@ public class GlobalBans {
 
 		CommandHandler commandHandler = new CommandHandler(discordClient, botProperties.getProperty("bot.core.prefix"));
 		commandHandler.registerCommand("ping", new PingCommand());
+		commandHandler.registerCommand("about", new AboutCommand());
 		commandHandler.registerCommand("legal", new LegalCommand());
 
 		eventDispatcher.on(MessageCreateEvent.class).flatMap(commandHandler::handle).subscribe();
@@ -104,6 +106,10 @@ public class GlobalBans {
 		while (true) {
 
 		}
+	}
+
+	public static String getConfigurationValue(String key) {
+		return botProperties.getProperty(key);
 	}
 }
 
