@@ -6,6 +6,7 @@ import com.craftxbox.globalbans.command.user.LegalCommand;
 import com.craftxbox.globalbans.command.user.PingCommand;
 import com.craftxbox.globalbans.listener.BotFarmChecker;
 import com.craftxbox.globalbans.listener.ServerJoinDM;
+import com.craftxbox.globalbans.util.DatabaseUtil;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.EventDispatcher;
@@ -68,6 +69,8 @@ public class GlobalBans {
 				.option(ConnectionFactoryOptions.USER, botProperties.getProperty("bot.core.pgsql.user"))
 				.option(ConnectionFactoryOptions.PASSWORD, botProperties.getProperty("bot.core.pgsql.pass"))
 				.option(ConnectionFactoryOptions.DATABASE, botProperties.getProperty("bot.core.pgsql.db")).build());
+
+		DatabaseUtil.init(connectionFactory);
 
 		discordClient = new DiscordClientBuilder(botProperties.getProperty("bot.core.token")).build();
 
