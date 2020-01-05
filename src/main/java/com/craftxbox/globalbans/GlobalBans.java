@@ -5,15 +5,17 @@ import com.craftxbox.globalbans.command.user.AboutCommand;
 import com.craftxbox.globalbans.command.user.LegalCommand;
 import com.craftxbox.globalbans.command.user.PingCommand;
 import com.craftxbox.globalbans.listener.BotFarmChecker;
-import com.craftxbox.globalbans.listener.ServerJoinDM;
+import com.craftxbox.globalbans.listener.ServerEvents;
 import com.craftxbox.globalbans.util.DatabaseUtil;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
+import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
+import discord4j.core.object.util.Snowflake;
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
@@ -77,7 +79,8 @@ public class GlobalBans {
 		EventDispatcher eventDispatcher = discordClient.getEventDispatcher();
 
 		eventDispatcher.on(GuildCreateEvent.class).flatMap(e -> new BotFarmChecker().checkServer(e.getGuild())).subscribe();
-		eventDispatcher.on(GuildCreateEvent.class).flatMap(e -> new ServerJoinDM().onJoin(e.getGuild())).subscribe();
+		eventDispatcher.on(GuildCreateEvent.class).flatMap(e -> new ServerEvents().onCreate(e.getGuild())).subscribe();
+		eventDispatcher.on(GuildDeleteEvent.class).flatMap(e -> new ServerEvents().onDelete(e)).subscribe();
 
 		CommandHandler commandHandler = new CommandHandler(discordClient, botProperties.getProperty("bot.core.prefix"));
 		commandHandler.registerCommand("ping", new PingCommand());

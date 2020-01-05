@@ -2,6 +2,7 @@ package com.craftxbox.globalbans.listener;
 
 import com.craftxbox.globalbans.data.GuildConfig;
 import com.craftxbox.globalbans.util.DatabaseUtil;
+import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import discord4j.core.object.audit.ActionType;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
@@ -13,9 +14,9 @@ import reactor.core.publisher.Mono;
 import java.time.Instant;
 import java.util.Optional;
 
-public class ServerJoinDM {
+public class ServerEvents {
 
-    public Mono<?> onJoin(Guild guild) {
+    public Mono<?> onCreate(Guild guild) {
         // I'm not sure how this is reliable but worked decently when testing
         Optional<Snowflake> selfId = guild.getClient().getSelfId();
 
@@ -44,4 +45,11 @@ public class ServerJoinDM {
         return Mono.empty();
     }
 
+    public Mono<?> onDelete(GuildDeleteEvent guildDeleteEvent) {
+        if (!guildDeleteEvent.isUnavailable()) {
+            return DatabaseUtil.deleteConfig(guildDeleteEvent.getGuildId());
+        }
+
+        return Mono.empty();
+    }
 }

@@ -1,9 +1,12 @@
 package com.craftxbox.globalbans.util;
 
 import com.craftxbox.globalbans.data.GuildConfig;
+import com.craftxbox.globalbans.data.PunishmentInfo;
 import discord4j.core.object.entity.Guild;
+import discord4j.core.object.entity.User;
 import discord4j.core.object.util.Snowflake;
 import io.r2dbc.spi.ConnectionFactory;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
@@ -60,6 +63,44 @@ public class DatabaseUtil {
         }
 
         return Mono.empty();
+    }
+
+    public static Mono<Void> deleteConfig(Snowflake guildId) {
+        if (connectionFactory != null) {
+            return Mono.from(connectionFactory.create())
+                    .flatMapMany(connection -> connection.createStatement("DELETE FROM guild_config WHERE server_id = $1")
+                    .bind("$1", guildId.asString())
+                    .execute()).then();
+        }
+
+        return Mono.empty();
+    }
+
+    public static Flux<PunishmentInfo> getPunishmentsForUser(User user) {
+        return getPunishmentsForUser(user.getId());
+    }
+
+    public static Flux<PunishmentInfo> getPunishmentsForUser(Snowflake userId) {
+        if (connectionFactory != null) {
+            return Flux.from(connectionFactory.create())
+                    .flatMap(connection -> connection.createStatement(
+                            "SELECT issued_by, type, case_id, punishment_type, punishment_time, " +
+                                    "punishment_expiry, reason FROM punishments WHERE user_id = $1")
+                    .bind("$1", userId.asString())
+                    .execute())
+                    .flatMap(result -> result.map((row, rowMetadata) -> new PunishmentInfo(
+                            userId,
+                            Snowflake.of(row.get("issued_by", String.class)),
+                            PunishmentInfo.CaseType.valueOf(row.get("type", String.class).toUpperCase()),
+                            Integer.valueOf(row.get("case_id", String.class)),
+                            PunishmentInfo.PunishmentType.valueOf(row.get("punishment_type", String.class).toUpperCase()),
+                            Instant.ofEpochMilli(Long.valueOf(row.get("punishment_time", String.class))),
+                            Instant.ofEpochMilli(Long.valueOf(row.get("punishment_expiry", String.class))),
+                            row.get("reason", String.class)
+                    )));
+        }
+
+        return Flux.empty();
     }
 
     public static class NoSuchGuildConfigException extends Exception {
