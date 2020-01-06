@@ -2,6 +2,7 @@ package com.craftxbox.globalbans;
 
 import com.craftxbox.globalbans.command.CommandHandler;
 import com.craftxbox.globalbans.command.user.AboutCommand;
+import com.craftxbox.globalbans.command.user.InviteCommand;
 import com.craftxbox.globalbans.command.user.LegalCommand;
 import com.craftxbox.globalbans.command.user.PingCommand;
 import com.craftxbox.globalbans.listener.BotFarmChecker;
@@ -15,7 +16,6 @@ import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
-import discord4j.core.object.util.Snowflake;
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
@@ -87,6 +87,7 @@ public class GlobalBans {
 		commandHandler.registerCommand("ping", new PingCommand());
 		commandHandler.registerCommand("about", new AboutCommand());
 		commandHandler.registerCommand("legal", new LegalCommand());
+		commandHandler.registerCommand("invite", new InviteCommand());
 
 		eventDispatcher.on(MessageCreateEvent.class).flatMap(commandHandler::handle).subscribe();
 
