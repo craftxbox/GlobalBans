@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Scanner;
 
 public class GlobalBans {
 
@@ -110,9 +111,13 @@ public class GlobalBans {
 					}
 				}).subscribe();
 
-		// TODO Implement CLI
-		while (true) {
+		Scanner scanner = new Scanner(System.in);
+		String input;
 
+		while ((input = scanner.next()) != null) {
+			if (input.equalsIgnoreCase("exit")) {
+				System.exit(0);
+			}
 		}
 	}
 
