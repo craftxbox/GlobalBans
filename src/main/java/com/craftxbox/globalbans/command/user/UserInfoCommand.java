@@ -75,36 +75,6 @@ public class UserInfoCommand implements CommandInterface {
 										GlobalBans.getConfigurationValue("bot.core.emote.cross")));
 							}));
 
-			/*return channel.getClient().getUserById(mentionedUser.get())
-					.flatMapMany(user -> DatabaseUtil.getPunishmentsForUser(user).flatMap(punishmentInfo -> {
-						if (punishmentInfo.getCaseType() == PunishmentInfo.CaseType.GLOBAL) {
-							if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.WARN) {
-								userWarned.set(true);
-							} else if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.BAN) {
-								userBanned.set(true);
-							}
-						}
-
-						return Mono.just(user);
-					})).next()
-					.flatMap(user -> channel.getGuild()
-							.flatMap(guild -> guild.getMemberById(mentionedUser.get())
-									.flatMap(guildMember -> guildMember.getPresence()
-											.flatMap(presence -> createUserEmbed(channel, user, guildMember,
-													presence.getStatus().getValue())))
-											.onErrorResume(t -> createUserEmbed(channel, user, null, null))))
-					.onErrorResume(t -> t instanceof ClientException,
-							t -> channel.createMessage(spec ->
-									spec.setContent(String.format("%s Unable to retrieve user.",
-											GlobalBans.getConfigurationValue("bot.core.emote.cross")))))
-					// Why is this exception private?
-					.onErrorResume(
-							t -> t.getClass().getName().equals(
-									"io.r2dbc.postgresql.PostgresqlConnectionFactory$PostgresConnectionException"),
-							t -> channel.createMessage(spec -> {
-								spec.setContent(String.format("%s Could not retrieve data.",
-										GlobalBans.getConfigurationValue("bot.core.emote.cross")));
-							}));*/
 		}
 
 		return channel.createMessage(spec -> spec.setContent(String.format("%s No valid users were specified.",
