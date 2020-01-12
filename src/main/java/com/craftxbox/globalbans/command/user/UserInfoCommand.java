@@ -1,5 +1,9 @@
 package com.craftxbox.globalbans.command.user;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -73,10 +77,12 @@ public class UserInfoCommand implements CommandInterface {
 
 	private Mono<Message> createUserEmbed(TextChannel channel, User user, Member member, String presence) {
 		return channel.createEmbed(embed -> {
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("E L dd yyyy hh:mm a z")
+												.withZone(ZoneId.of("UTC"));
 			embed.setAuthor(user.getUsername(), "", user.getAvatarUrl());
 			embed.addField("Nickname", member != null ? member.getNickname().orElse("N/A") : "Not in guild.", true);
 			embed.addField("Discriminator", user.getDiscriminator(), true);
-			embed.addField("Date Registered", user.getId().getTimestamp().toString(), true);
+			embed.addField("Date Registered", formatter.format(user.getId().getTimestamp()), true);
 			embed.addField("Is Bot", Boolean.toString(user.isBot()), true);
 			embed.addField("Status", presence != null ? presence : "Not in guild.", true);
 			embed.addField("ID", user.getId().asString(), true);
