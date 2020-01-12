@@ -2,9 +2,8 @@ package com.craftxbox.globalbans.command.user;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,6 +41,7 @@ public class UserInfoCommand implements CommandInterface {
 		if (mentionedUser.get() != null) {
 			AtomicBoolean userWarned = new AtomicBoolean(false);
 			AtomicBoolean userBanned = new AtomicBoolean(false);
+			AtomicInteger userPunishmentCount = new AtomicInteger(0);
 
 			return channel.getClient().getUserById(mentionedUser.get())
 					.flatMapMany(user -> DatabaseUtil.getPunishmentsForUser(user).flatMap(punishmentInfo -> {
@@ -51,6 +51,7 @@ public class UserInfoCommand implements CommandInterface {
 							} else if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.BAN) {
 								userBanned.set(true);
 							}
+							userPunishmentCount.incrementAndGet();
 						}
 
 						return Mono.just(user);
@@ -59,9 +60,8 @@ public class UserInfoCommand implements CommandInterface {
 					.flatMap(user -> channel.getGuild()
 							.flatMap(guild -> guild.getMemberById(mentionedUser.get())
 									.flatMap(guildMember -> guildMember.getPresence()
-											.flatMap(presence -> createUserEmbed(channel, user, guildMember,
-													presence.getStatus().getValue())))
-									.onErrorResume(t -> createUserEmbed(channel, user, null, null))))
+											.flatMap(presence -> createUserEmbed(channel, user, guildMember, presence.getStatus().getValue(),userWarned.get(),userBanned.get(),userPunishmentCount.get())))
+									.onErrorResume(t -> createUserEmbed(channel, user, null, null,userWarned.get(),userBanned.get(),userPunishmentCount.get()))))
 					.onErrorResume(t -> t instanceof ClientException,
 							t -> channel.createMessage(spec ->
 									spec.setContent(String.format("%s Unable to retrieve user.",
@@ -82,7 +82,7 @@ public class UserInfoCommand implements CommandInterface {
 
 	}
 
-	private Mono<Message> createUserEmbed(TextChannel channel, User user, Member member, String presence) {
+	private Mono<Message> createUserEmbed(TextChannel channel, User user, Member member, String presence,boolean warned, boolean banned, Integer count) {
 		return channel.createEmbed(embed -> {
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("E L dd yyyy hh:mm a z")
 												.withZone(ZoneId.of("UTC"));
@@ -93,6 +93,10 @@ public class UserInfoCommand implements CommandInterface {
 			embed.addField("Is Bot", Boolean.toString(user.isBot()), true);
 			embed.addField("Status", presence != null ? presence : "Not in guild.", true);
 			embed.addField("ID", user.getId().asString(), true);
+			embed.addField("GlobalBans Listed", warned && banned ? "Banned" : banned ? "Banned" : warned ? "Warned" : "No", true);
+			if(warned || banned) {
+				embed.addField("GlobalBans Entries", Integer.toString(count), true);
+			}
 		});
 	}
 }
