@@ -20,6 +20,7 @@ import discord4j.core.object.entity.TextChannel;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.util.Snowflake;
 import discord4j.rest.http.client.ClientException;
+import io.r2dbc.spi.R2dbcNonTransientException;
 import reactor.core.publisher.Mono;
 
 public class UserInfoCommand implements CommandInterface {
@@ -60,16 +61,15 @@ public class UserInfoCommand implements CommandInterface {
 							.flatMap(guild -> guild.getMemberById(mentionedUser.get())
 									.flatMap(guildMember -> guildMember.getPresence()
 											.flatMap(presence -> createUserEmbed(channel, user, guildMember,
-													presence.getStatus().getValue())))
-									.onErrorResume(t -> createUserEmbed(channel, user, null, null))))
+													presence.getStatus().getValue(), userBanned.get(), userWarned.get())))
+									.onErrorResume(t -> createUserEmbed(channel, user, null, null,
+											userBanned.get(), userWarned.get()))))
 					.onErrorResume(t -> t instanceof ClientException,
 							t -> channel.createMessage(spec ->
 									spec.setContent(String.format("%s Unable to retrieve user.",
 											GlobalBans.getConfigurationValue("bot.core.emote.cross")))))
-					// Why is this exception private?
 					.onErrorResume(
-							t -> t.getClass().getName().equals(
-									"io.r2dbc.postgresql.PostgresqlConnectionFactory$PostgresConnectionException"),
+							t -> t instanceof R2dbcNonTransientException,
 							t -> channel.createMessage(spec -> {
 								spec.setContent(String.format("%s Could not retrieve data.",
 										GlobalBans.getConfigurationValue("bot.core.emote.cross")));
@@ -82,7 +82,8 @@ public class UserInfoCommand implements CommandInterface {
 
 	}
 
-	private Mono<Message> createUserEmbed(TextChannel channel, User user, Member member, String presence) {
+	private Mono<Message> createUserEmbed(TextChannel channel, User user, Member member, String presence,
+										  boolean userBanned, boolean userWarned) {
 		return channel.createEmbed(embed -> {
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("E L dd yyyy hh:mm a z")
 												.withZone(ZoneId.of("UTC"));
@@ -93,6 +94,14 @@ public class UserInfoCommand implements CommandInterface {
 			embed.addField("Is Bot", Boolean.toString(user.isBot()), true);
 			embed.addField("Status", presence != null ? presence : "Not in guild.", true);
 			embed.addField("ID", user.getId().asString(), true);
+
+			if (userBanned) {
+				embed.addField("GlobalBans Listed", "Banned", true);
+			} else if (userWarned) {
+				embed.addField("GlobalBans Listed", "Warned", true);
+			} else {
+				embed.addField("GlobalBans Listed", "No", true);
+			}
 		});
 	}
 }
