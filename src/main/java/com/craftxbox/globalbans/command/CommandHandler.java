@@ -65,7 +65,11 @@ public class CommandHandler {
                             .flatMap(permissions -> findCommand(commandName)
                                     .flatMap(command -> message.getAuthorAsMember()
                                             .flatMap(member -> processArgs(commandExploded)
-                                                    .flatMap(args -> command.handleCommand(member, message, channel, args))))));
+                                                    .flatMap(args -> command.handleCommand(member, message, channel, args))))))
+                    .onErrorResume((t) -> {
+                        t.printStackTrace();
+                        return Mono.empty();
+                    });
         }
 
         return Mono.empty();
