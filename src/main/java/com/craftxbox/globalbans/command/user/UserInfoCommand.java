@@ -1,74 +1,85 @@
 package com.craftxbox.globalbans.command.user;
 
-import com.craftxbox.globalbans.GlobalBans;
-import com.craftxbox.globalbans.command.CommandInterface;
-import com.craftxbox.globalbans.data.PunishmentInfo;
-import com.craftxbox.globalbans.util.DatabaseUtil;
-import discord4j.core.object.entity.Member;
-import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.TextChannel;
-import discord4j.core.object.util.Snowflake;
-import discord4j.core.spec.MessageCreateSpec;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.craftxbox.globalbans.GlobalBans;
+import com.craftxbox.globalbans.command.CommandInterface;
+import com.craftxbox.globalbans.data.PunishmentInfo;
+import com.craftxbox.globalbans.util.DatabaseUtil;
+
+import discord4j.core.object.entity.Member;
+import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.TextChannel;
+import discord4j.core.object.entity.User;
+import discord4j.core.object.util.Snowflake;
+import reactor.core.publisher.Mono;
+
 public class UserInfoCommand implements CommandInterface {
 
-    private Pattern USER_REGEX = Pattern.compile("\\d{17,21}");
+	private Pattern USER_REGEX = Pattern.compile("\\d{17,21}");
 
-    @Override
-    public Mono<Message> handleCommand(Member member, Message message, TextChannel channel, String[] args) {
-        Snowflake mentionedUser = null;
+	@Override
+	public Mono<Message> handleCommand(Member member, Message message, TextChannel channel, String[] args) {
+		AtomicReference<Snowflake> mentionedUser = new AtomicReference<>();
 
-        for (String s : args) {
-            Matcher matcher = USER_REGEX.matcher(s);
+		for (String s : args) {
+			Matcher matcher = USER_REGEX.matcher(s);
 
-            if (matcher.matches()) {
-                mentionedUser = Snowflake.of(matcher.group());
-                break;
-            }
-        }
+			if (matcher.matches()) {
+				mentionedUser.set(Snowflake.of(matcher.group()));
+				break;
+			}
+		}
 
-        if (mentionedUser != null) {
-            AtomicBoolean userWarned = new AtomicBoolean(false);
-            AtomicBoolean userBanned = new AtomicBoolean(false);
+		if (mentionedUser.get() != null) {
+			AtomicBoolean userWarned = new AtomicBoolean(false);
+			AtomicBoolean userBanned = new AtomicBoolean(false);
 
-            return channel.getClient().getUserById(mentionedUser)
-                    .flatMapMany(user -> DatabaseUtil.getPunishmentsForUser(user)
-                        .flatMap(punishmentInfo -> {
-                            if (punishmentInfo.getCaseType() == PunishmentInfo.CaseType.GLOBAL) {
-                                if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.WARN) {
-                                    userWarned.set(true);
-                                } else if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.BAN) {
-                                    userBanned.set(true);
-                                }
-                            }
+			return channel.getClient().getUserById(mentionedUser.get())
+					.flatMapMany(user -> DatabaseUtil.getPunishmentsForUser(user).flatMap(punishmentInfo -> {
+						if (punishmentInfo.getCaseType() == PunishmentInfo.CaseType.GLOBAL) {
+							if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.WARN) {
+								userWarned.set(true);
+							} else if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.BAN) {
+								userBanned.set(true);
+							}
+						}
 
-                            return Mono.empty();
-                        })).then(Mono.defer(() -> channel.createMessage(spec -> {
-                            spec.setContent(String.format("Warn: %s\r\nBan: %s", userWarned, userBanned));
-                        })))
-                        // Why is this exception private?
-                        .onErrorResume(t -> t.getClass().getName().equals(
-                                "io.r2dbc.postgresql.PostgresqlConnectionFactory$PostgresConnectionException"),
-                                t -> channel.createMessage(spec -> {
-                                    spec.setContent(String.format(
-                                         "%s Could not retrieve data.",
-                                        GlobalBans.getConfigurationValue("bot.core.emote.cross")
-                                ));
-                        }));
-        }
+						return Mono.just(user);
+					})).next()
+					.flatMap(user -> channel.getGuild()
+							.flatMap(guild -> guild.getMemberById(mentionedUser.get())
+									.flatMap(guildMember -> guildMember.getPresence()
+											.flatMap(presence -> createUserEmbed(channel, user, guildMember,
+													presence.getStatus().getValue()))
+											.onErrorResume(t -> createUserEmbed(channel, user, null, null)))))
+					// Why is this exception private?
+					.onErrorResume(
+							t -> t.getClass().getName().equals(
+									"io.r2dbc.postgresql.PostgresqlConnectionFactory$PostgresConnectionException"),
+							t -> channel.createMessage(spec -> {
+								spec.setContent(String.format("%s Could not retrieve data.",
+										GlobalBans.getConfigurationValue("bot.core.emote.cross")));
+							}));
+		}
 
-        return channel.createMessage(spec -> spec.setContent(String.format(
-                "%s No valid users were specified.",
-                GlobalBans.getConfigurationValue("bot.core.emote.cross")
-        )));
-    }
+		return channel.createMessage(spec -> spec.setContent(String.format("%s No valid users were specified.",
+				GlobalBans.getConfigurationValue("bot.core.emote.cross"))));
+
+	}
+
+	private Mono<Message> createUserEmbed(TextChannel channel, User user, Member member, String presence) {
+		return channel.createEmbed(embed -> {
+			embed.setAuthor(user.getUsername(), "", user.getAvatarUrl());
+			embed.addField("Nickname", member != null ? member.getNickname().orElse("N/A") : "Not in guild.", true);
+			embed.addField("Discriminator", user.getDiscriminator(), true);
+			embed.addField("Date Registered", user.getId().getTimestamp().toString(), true);
+			embed.addField("Is Bot", Boolean.toString(user.isBot()), true);
+			embed.addField("Status", presence != null ? presence : "Not in guild.", true);
+			embed.addField("ID", user.getId().asString(), true);
+		});
+	}
 }
