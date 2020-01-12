@@ -14,13 +14,15 @@ import java.time.Instant;
 public class DatabaseUtil {
 
     private static ConnectionFactory connectionFactory;
+    private static String schemaName;
 
-    public static void init(ConnectionFactory connFactory) {
+    public static void init(ConnectionFactory connFactory, String schmName) {
         if (connectionFactory != null) {
             throw new IllegalStateException("Already initialized");
         }
 
         connectionFactory = connFactory;
+        schemaName = schmName;
     }
 
     public static Mono<GuildConfig> getGuildConfig(Guild guild) {
@@ -31,7 +33,7 @@ public class DatabaseUtil {
         if (connectionFactory != null) {
             return Mono.from(connectionFactory.create())
                     .flatMapMany(connection -> connection.createStatement(
-                            "SELECT created_on, notification_channel, warn_only FROM guild_config WHERE server_id = $1")
+                            "SELECT created_on, notification_channel, warn_only FROM " + schemaName + ".guild_config WHERE server_id = $1")
                                 .bind("$1", guildId.asString()).execute())
                     .flatMap(result -> result.map((row, rowMetadata) -> new GuildConfig(
                             Instant.ofEpochMilli(Long.valueOf(row.get("created_on", String.class))),
@@ -53,7 +55,7 @@ public class DatabaseUtil {
         if (connectionFactory != null) {
             return Mono.from(connectionFactory.create())
                     .flatMapMany(connection -> connection.createStatement(
-                            "INSERT INTO guild_config (server_id, created_on, notification_channel, warn_only) VALUES ($1, $2, $3, $4) " +
+                            "INSERT INTO  " + schemaName + ".guild_config (server_id, created_on, notification_channel, warn_only) VALUES ($1, $2, $3, $4) " +
                                     "ON CONFLICT (server_id) DO UPDATE SET created_on = $2, notification_channel = $3, warn_only = $4")
                     .bind("$1", guildId.asString())
                     .bind("$2", guildConfig.getCreatedOn().toEpochMilli())
@@ -68,7 +70,7 @@ public class DatabaseUtil {
     public static Mono<Void> deleteConfig(Snowflake guildId) {
         if (connectionFactory != null) {
             return Mono.from(connectionFactory.create())
-                    .flatMapMany(connection -> connection.createStatement("DELETE FROM guild_config WHERE server_id = $1")
+                    .flatMapMany(connection -> connection.createStatement("DELETE FROM  " + schemaName + ".guild_config WHERE server_id = $1")
                     .bind("$1", guildId.asString())
                     .execute()).then();
         }
@@ -85,7 +87,7 @@ public class DatabaseUtil {
             return Flux.from(connectionFactory.create())
                     .flatMap(connection -> connection.createStatement(
                             "SELECT issued_by, type, case_id, punishment_type, punishment_time, " +
-                                    "punishment_expiry, reason FROM punishments WHERE user_id = $1")
+                                    "punishment_expiry, reason FROM  " + schemaName + ".punishments WHERE user_id = $1")
                     .bind("$1", userId.asString())
                     .execute())
                     .flatMap(result -> result.map((row, rowMetadata) -> new PunishmentInfo(
@@ -111,7 +113,7 @@ public class DatabaseUtil {
         if (connectionFactory != null) {
             return Flux.from(connectionFactory.create())
                     .flatMap(connection -> connection.createStatement(
-                            "SELECT COUNT(id) FROM punishments WHERE user_id = $1")
+                            "SELECT COUNT(id) FROM  " + schemaName + ".punishments WHERE user_id = $1")
                             .bind("$1", userId.asString())
                             .execute())
                     .flatMap(result -> result.map((row, rowMetadata) -> row.get("count", Long.class)))

@@ -74,7 +74,7 @@ public class GlobalBans {
 				.option(ConnectionFactoryOptions.PASSWORD, botProperties.getProperty("bot.core.pgsql.pass"))
 				.option(ConnectionFactoryOptions.DATABASE, botProperties.getProperty("bot.core.pgsql.db")).build());
 
-		DatabaseUtil.init(connectionFactory);
+		DatabaseUtil.init(connectionFactory, botProperties.getProperty("bot.core.pgsql.schema"));
 
 		discordClient = new DiscordClientBuilder(botProperties.getProperty("bot.core.token")).build();
 
