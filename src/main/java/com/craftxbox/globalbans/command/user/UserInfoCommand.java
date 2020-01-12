@@ -19,6 +19,7 @@ import discord4j.core.object.entity.TextChannel;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.util.Snowflake;
 import discord4j.rest.http.client.ClientException;
+import io.r2dbc.spi.R2dbcNonTransientException;
 import reactor.core.publisher.Mono;
 
 public class UserInfoCommand implements CommandInterface {
@@ -66,10 +67,8 @@ public class UserInfoCommand implements CommandInterface {
 							t -> channel.createMessage(spec ->
 									spec.setContent(String.format("%s Unable to retrieve user.",
 											GlobalBans.getConfigurationValue("bot.core.emote.cross")))))
-					// Why is this exception private?
 					.onErrorResume(
-							t -> t.getClass().getName().equals(
-									"io.r2dbc.postgresql.PostgresqlConnectionFactory$PostgresConnectionException"),
+							t -> t instanceof R2dbcNonTransientException,
 							t -> channel.createMessage(spec -> {
 								spec.setContent(String.format("%s Could not retrieve data.",
 										GlobalBans.getConfigurationValue("bot.core.emote.cross")));
@@ -93,7 +92,14 @@ public class UserInfoCommand implements CommandInterface {
 			embed.addField("Is Bot", Boolean.toString(user.isBot()), true);
 			embed.addField("Status", presence != null ? presence : "Not in guild.", true);
 			embed.addField("ID", user.getId().asString(), true);
-			embed.addField("GlobalBans Listed", warned && banned ? "Banned" : banned ? "Banned" : warned ? "Warned" : "No", true);
+			embed.addField("GlobalBans Listed", 
+				warned && banned ? //if warned and banned
+					"Banned" : //list only banned
+					banned ?  // else if banned
+						"Banned" : //list banned
+						warned ?  //else if warned
+							"Warned" : //list warned
+							"No", true); //else list no
 			if(warned || banned) {
 				embed.addField("GlobalBans Entries", Integer.toString(count), true);
 			}
