@@ -31,12 +31,17 @@ public class UserInfoCommand implements CommandInterface {
 	public Mono<Message> handleCommand(Member member, Message message, TextChannel channel, String[] args) {
 		AtomicReference<Snowflake> mentionedUser = new AtomicReference<>();
 
-		for (String s : args) {
-			Matcher matcher = USER_REGEX.matcher(s);
+		// Check for any real mentions first
+		if (!message.getUserMentionIds().isEmpty()) {
+			mentionedUser.set(message.getUserMentionIds().toArray(new Snowflake[]{})[0]);
+		} else {
+			for (String s : args) {
+				Matcher matcher = USER_REGEX.matcher(s);
 
-			if (matcher.matches()) {
-				mentionedUser.set(Snowflake.of(matcher.group()));
-				break;
+				if (matcher.matches()) {
+					mentionedUser.set(Snowflake.of(matcher.group()));
+					break;
+				}
 			}
 		}
 
