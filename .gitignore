@@ -85,3 +85,5 @@ target/
 # IntelliJ IDE Specific
 .idea/
 *.iml
+/.project
+/.classpath
