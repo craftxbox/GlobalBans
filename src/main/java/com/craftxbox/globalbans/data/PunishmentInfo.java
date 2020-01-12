@@ -28,6 +28,38 @@ public class PunishmentInfo {
         this.reason = reason;
     }
 
+    public Snowflake getUserId() {
+        return userId;
+    }
+
+    public Snowflake getIssuedBy() {
+        return issuedBy;
+    }
+
+    public CaseType getCaseType() {
+        return caseType;
+    }
+
+    public int getCaseId() {
+        return caseId;
+    }
+
+    public PunishmentType getPunishmentType() {
+        return punishmentType;
+    }
+
+    public Instant getPunishmentTime() {
+        return punishmentTime;
+    }
+
+    public Instant getPunishmentExpiry() {
+        return punishmentExpiry;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
     public enum CaseType {
         LOCAL,
         GLOBAL

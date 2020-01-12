@@ -5,6 +5,7 @@ import com.craftxbox.globalbans.command.user.AboutCommand;
 import com.craftxbox.globalbans.command.user.InviteCommand;
 import com.craftxbox.globalbans.command.user.LegalCommand;
 import com.craftxbox.globalbans.command.user.PingCommand;
+import com.craftxbox.globalbans.command.user.UserInfoCommand;
 import com.craftxbox.globalbans.listener.BotFarmChecker;
 import com.craftxbox.globalbans.listener.ServerEvents;
 import com.craftxbox.globalbans.util.DatabaseUtil;
@@ -88,6 +89,7 @@ public class GlobalBans {
 		commandHandler.registerCommand("about", new AboutCommand());
 		commandHandler.registerCommand("legal", new LegalCommand());
 		commandHandler.registerCommand("invite", new InviteCommand());
+		commandHandler.registerCommand("userinfo", new UserInfoCommand());
 
 		eventDispatcher.on(MessageCreateEvent.class).flatMap(commandHandler::handle).subscribe();
 
@@ -96,7 +98,7 @@ public class GlobalBans {
 		Random r = new Random();
 
 		Flux.interval(Duration.ofMinutes(5L))
-				.flatMap(t -> Mono.just(statusList.get(r.nextInt(statusList.size() - 1))))
+				.flatMap(t -> Mono.just(statusList.get(r.nextInt(statusList.size()))))
 				.flatMap(newStatus -> {
 					String[] statusSplit = newStatus.split("\t");
 					String statusType = statusSplit[0];

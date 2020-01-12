@@ -103,6 +103,24 @@ public class DatabaseUtil {
         return Flux.empty();
     }
 
+    public static Mono<Long> getPunishmentCountForUser(User user) {
+        return getPunishmentCountForUser(user.getId());
+    }
+
+    public static Mono<Long> getPunishmentCountForUser(Snowflake userId) {
+        if (connectionFactory != null) {
+            return Flux.from(connectionFactory.create())
+                    .flatMap(connection -> connection.createStatement(
+                            "SELECT COUNT(id) FROM punishments WHERE user_id = $1")
+                            .bind("$1", userId.asString())
+                            .execute())
+                    .flatMap(result -> result.map((row, rowMetadata) -> row.get("count", Long.class)))
+                    .single();
+        }
+
+        return Mono.empty();
+    }
+
     public static class NoSuchGuildConfigException extends Exception {
 
     }
