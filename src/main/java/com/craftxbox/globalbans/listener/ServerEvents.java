@@ -9,6 +9,8 @@ import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.util.Permission;
 import discord4j.core.object.util.Snowflake;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
@@ -16,11 +18,15 @@ import java.util.Optional;
 
 public class ServerEvents {
 
+    private Logger serverEventsLogger = LoggerFactory.getLogger(ServerEvents.class);
+
     public Mono<?> onCreate(Guild guild) {
         // I'm not sure how this is reliable but worked decently when testing
         Optional<Snowflake> selfId = guild.getClient().getSelfId();
 
         if (selfId.isPresent()) {
+            serverEventsLogger.info("Create Guild - {} ({})", guild.getId().asString(), guild.getName());
+
             return DatabaseUtil.getGuildConfig(guild)
                     .onErrorResume(t -> t instanceof DatabaseUtil.NoSuchGuildConfigException,
                             t -> guild.getMemberById(selfId.get())
@@ -38,6 +44,7 @@ public class ServerEvents {
                                         + "\nUse b;report <User ID> <Reason + Proof> to report users to be reviewed."
                                         + "\nCriteria for reporting is if they 1: Advertise 2: Spam 3: Raid 4: Harrass. Please include proof."
                                         + "\nUse b;userinfo <Mention or ID> to get information about a specific user."
+                                        + "\n\n**NOTE**: GlobalBans will not function until a notification channel is set."
                         )).and(DatabaseUtil.submitConfig(guild, new GuildConfig(Instant.now(), "not_set", false)))
                             .then().cast(GuildConfig.class)));
         }
@@ -46,6 +53,9 @@ public class ServerEvents {
     }
 
     public Mono<?> onDelete(GuildDeleteEvent guildDeleteEvent) {
+        serverEventsLogger.info("Delete Guild - {} (Unavailable: {})",
+                guildDeleteEvent.getGuildId().asString(), guildDeleteEvent.isUnavailable());
+
         if (!guildDeleteEvent.isUnavailable()) {
             return DatabaseUtil.deleteConfig(guildDeleteEvent.getGuildId());
         }

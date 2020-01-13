@@ -1,6 +1,7 @@
 package com.craftxbox.globalbans;
 
 import com.craftxbox.globalbans.command.CommandHandler;
+import com.craftxbox.globalbans.command.servermod.SetNotificationChannelCommand;
 import com.craftxbox.globalbans.command.user.AboutCommand;
 import com.craftxbox.globalbans.command.user.InviteCommand;
 import com.craftxbox.globalbans.command.user.LegalCommand;
@@ -90,6 +91,8 @@ public class GlobalBans {
 		commandHandler.registerCommand("legal", new LegalCommand());
 		commandHandler.registerCommand("invite", new InviteCommand());
 		commandHandler.registerCommand("userinfo", new UserInfoCommand());
+
+		commandHandler.registerCommand("setnotifychannel", new SetNotificationChannelCommand());
 
 		eventDispatcher.on(MessageCreateEvent.class).flatMap(commandHandler::handle).subscribe();
 
