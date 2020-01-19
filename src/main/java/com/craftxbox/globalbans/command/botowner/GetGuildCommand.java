@@ -36,17 +36,6 @@ public class GetGuildCommand implements CommandInterface {
         }
 
         if (mentionedGuild != null) {
-            /*
-            channel.createEmbed(em->{
-    				em.setAuthor(guild.getName(), "", guild.getIconUrl(Format.PNG).orElse("https://crxb.tk/vy30qk"));
-    				em.addField("Bots", Integer.toString(guild.getMembers().toStream().filter(u -> u.isBot()).collect(Collectors.toList()).size()), true);
-    				em.addField("Humans", Integer.toString(guild.getMembers().toStream().filter(u -> !u.isBot()).collect(Collectors.toList()).size()), true);
-    				em.addField("Total Users", Long.toString(guild.getMembers().count().block()), true);
-    				em.addField("Bot Percentage", "%" + Float.toString((guild.getMembers().toStream().filter(u -> u.isBot()).collect(Collectors.toList()).size() * 100.0f) / guild.getMembers().count().block()), true );
-    				em.addField("Owner", guild.getOwner().block().getId().asString(), true);
-    			}).subscribe();
-             */
-
             return channel.getClient().getGuildById(mentionedGuild)
                     .flatMap(guild -> Mono.just(guild.getMemberCount().orElse(1))
                         .flatMap(memberCount -> guild.getMembers()
