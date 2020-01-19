@@ -83,7 +83,6 @@ public class UserInfoCommand implements CommandInterface {
 
 		return channel.createMessage(spec -> spec.setContent(String.format("%s No valid users were specified.",
 				GlobalBans.getConfigurationValue("bot.core.emote.cross"))));
-
 	}
 
 	private Mono<Message> createUserEmbed(TextChannel channel, User user, Member member, String presence,
