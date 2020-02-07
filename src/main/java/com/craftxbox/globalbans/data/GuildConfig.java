@@ -25,4 +25,13 @@ public class GuildConfig {
     public boolean isWarnOnly() {
         return warnOnly;
     }
+
+    @Override
+    public String toString() {
+        return "GuildConfig{" +
+                "createdOn=" + createdOn +
+                ", notificationChannel='" + notificationChannel + '\'' +
+                ", warnOnly=" + warnOnly +
+                '}';
+    }
 }

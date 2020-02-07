@@ -26,42 +26,48 @@ public class DatabaseUtil {
     }
 
     public static Mono<GuildConfig> getGuildConfig(Guild guild) {
-        return getGuildConfig(guild.getId());
+        return getGuildConfig(guild.getId(), true);
     }
 
-    public static Mono<GuildConfig> getGuildConfig(Snowflake guildId) {
+    public static Mono<GuildConfig> getGuildConfig(Guild guild, boolean forceCreate) {
+        return getGuildConfig(guild.getId(), forceCreate);
+    }
+
+    public static Mono<GuildConfig> getGuildConfig(Snowflake guildId, boolean forceCreate) {
         if (connectionFactory != null) {
             return Mono.from(connectionFactory.create())
                     .flatMapMany(connection -> connection.createStatement(
                             "SELECT created_on, notification_channel, warn_only FROM " + schemaName + ".guild_config WHERE server_id = $1")
-                                .bind("$1", guildId.asString()).execute())
+                            .bind("$1", guildId.asString()).execute())
                     .flatMap(result -> result.map((row, rowMetadata) -> new GuildConfig(
                             Instant.ofEpochMilli(Long.valueOf(row.get("created_on", String.class))),
                             row.get("notification_channel", String.class),
                             row.get("warn_only", Boolean.class)
                     )))
                     .next()
-                    .switchIfEmpty(Mono.error(new NoSuchGuildConfigException()));
+                    .switchIfEmpty(forceCreate ? submitConfig(guildId,
+                            new GuildConfig(Instant.now(), "not_set", false))
+                                : Mono.error(new NoSuchGuildConfigException()));
         }
 
         return Mono.empty();
     }
 
-    public static Mono<Void> submitConfig(Guild guild, GuildConfig guildConfig) {
+    public static Mono<GuildConfig> submitConfig(Guild guild, GuildConfig guildConfig) {
         return submitConfig(guild.getId(), guildConfig);
     }
 
-    public static Mono<Void> submitConfig(Snowflake guildId, GuildConfig guildConfig) {
+    public static Mono<GuildConfig> submitConfig(Snowflake guildId, GuildConfig guildConfig) {
         if (connectionFactory != null) {
             return Mono.from(connectionFactory.create())
                     .flatMapMany(connection -> connection.createStatement(
                             "INSERT INTO  " + schemaName + ".guild_config (server_id, created_on, notification_channel, warn_only) VALUES ($1, $2, $3, $4) " +
                                     "ON CONFLICT (server_id) DO UPDATE SET created_on = $2, notification_channel = $3, warn_only = $4")
-                    .bind("$1", guildId.asString())
-                    .bind("$2", guildConfig.getCreatedOn().toEpochMilli())
-                    .bind("$3", guildConfig.getNotificationChannel())
-                    .bind("$4", guildConfig.isWarnOnly())
-                    .execute()).then();
+                            .bind("$1", guildId.asString())
+                            .bind("$2", guildConfig.getCreatedOn().toEpochMilli())
+                            .bind("$3", guildConfig.getNotificationChannel())
+                            .bind("$4", guildConfig.isWarnOnly())
+                            .execute()).then(Mono.just(guildConfig));
         }
 
         return Mono.empty();
@@ -71,8 +77,8 @@ public class DatabaseUtil {
         if (connectionFactory != null) {
             return Mono.from(connectionFactory.create())
                     .flatMapMany(connection -> connection.createStatement("DELETE FROM  " + schemaName + ".guild_config WHERE server_id = $1")
-                    .bind("$1", guildId.asString())
-                    .execute()).then();
+                            .bind("$1", guildId.asString())
+                            .execute()).then();
         }
 
         return Mono.empty();
@@ -88,8 +94,8 @@ public class DatabaseUtil {
                     .flatMap(connection -> connection.createStatement(
                             "SELECT issued_by, type, case_id, punishment_type, punishment_time, " +
                                     "punishment_expiry, reason FROM  " + schemaName + ".punishments WHERE user_id = $1")
-                    .bind("$1", userId.asString())
-                    .execute())
+                            .bind("$1", userId.asString())
+                            .execute())
                     .flatMap(result -> result.map((row, rowMetadata) -> new PunishmentInfo(
                             userId,
                             Snowflake.of(row.get("issued_by", String.class)),

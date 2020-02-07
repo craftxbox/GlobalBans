@@ -21,7 +21,7 @@
             <url>https://jitpack.io</url>
         </repository>
         <repository>
-            <id>central</id>
+            <id>bintray</id>
             <name>bintray</name>
             <url>http://jcenter.bintray.com</url>
         </repository>
@@ -31,7 +31,7 @@
         <dependency>
             <groupId>com.github.Discord4J</groupId>
             <artifactId>Discord4J</artifactId>
-            <version>f536709</version>
+            <version>803121f</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>

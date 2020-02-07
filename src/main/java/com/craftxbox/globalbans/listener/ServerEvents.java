@@ -9,6 +9,8 @@ import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.util.Permission;
 import discord4j.core.object.util.Snowflake;
+import discord4j.core.spec.MessageCreateSpec;
+import discord4j.rest.http.client.ClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -25,15 +27,15 @@ public class ServerEvents {
         Optional<Snowflake> selfId = guild.getClient().getSelfId();
 
         if (selfId.isPresent()) {
-            serverEventsLogger.info("Create Guild - {} ({})", guild.getId().asString(), guild.getName());
-
-            return DatabaseUtil.getGuildConfig(guild)
+            return DatabaseUtil.getGuildConfig(guild, false)
                     .onErrorResume(t -> t instanceof DatabaseUtil.NoSuchGuildConfigException,
                             t -> guild.getMemberById(selfId.get())
                         .flatMap(Member::getBasePermissions)
                         .filter(permissions -> permissions.contains(Permission.VIEW_AUDIT_LOG))
+                        .switchIfEmpty(newGuildConfig(guild).then(Mono.empty()))
                         .flatMapMany(ignored -> guild.getAuditLog(spec -> spec.setActionType(ActionType.BOT_ADD)))
                         .filter(auditLogEntry -> auditLogEntry.getTargetId().get().equals(selfId.get()))
+                        .switchIfEmpty(newGuildConfig(guild).then(Mono.empty()))
                         .next()
                         .flatMap(auditLogEntry -> guild.getClient().getUserById(auditLogEntry.getResponsibleUserId()))
                         .flatMap(User::getPrivateChannel)
@@ -45,11 +47,15 @@ public class ServerEvents {
                                         + "\nCriteria for reporting is if they 1: Advertise 2: Spam 3: Raid 4: Harrass. Please include proof."
                                         + "\nUse b;userinfo <Mention or ID> to get information about a specific user."
                                         + "\n\n**NOTE**: GlobalBans will not function until a notification channel is set."
-                        )).and(DatabaseUtil.submitConfig(guild, new GuildConfig(Instant.now(), "not_set", false)))
-                            .then().cast(GuildConfig.class)));
+                        )).onErrorResume(t2 -> t2 instanceof ClientException, t2 -> Mono.empty())
+                                .and(newGuildConfig(guild)).then().cast(GuildConfig.class)));
         }
 
         return Mono.empty();
+    }
+
+    private Mono<GuildConfig> newGuildConfig(Guild guild) {
+        return DatabaseUtil.submitConfig(guild, new GuildConfig(Instant.now(), "not_set", false));
     }
 
     public Mono<?> onDelete(GuildDeleteEvent guildDeleteEvent) {

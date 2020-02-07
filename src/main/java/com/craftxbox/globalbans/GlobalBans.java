@@ -1,6 +1,7 @@
 package com.craftxbox.globalbans;
 
 import com.craftxbox.globalbans.command.CommandHandler;
+import com.craftxbox.globalbans.command.botowner.DebugGuildCommand;
 import com.craftxbox.globalbans.command.botowner.GetGuildCommand;
 import com.craftxbox.globalbans.command.servermod.SetNotificationChannelCommand;
 import com.craftxbox.globalbans.command.user.AboutCommand;
@@ -16,6 +17,7 @@ import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.guild.GuildDeleteEvent;
+import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
@@ -82,9 +84,22 @@ public class GlobalBans {
 
 		EventDispatcher eventDispatcher = discordClient.getEventDispatcher();
 
-		eventDispatcher.on(GuildCreateEvent.class).flatMap(e -> new BotFarmChecker().checkServer(e.getGuild())).subscribe();
-		eventDispatcher.on(GuildCreateEvent.class).flatMap(e -> new ServerEvents().onCreate(e.getGuild())).subscribe();
-		eventDispatcher.on(GuildDeleteEvent.class).flatMap(e -> new ServerEvents().onDelete(e)).subscribe();
+		BotFarmChecker botFarmChecker = new BotFarmChecker();
+		eventDispatcher.on(GuildCreateEvent.class).flatMap(e -> botFarmChecker.checkServer(e.getGuild())).subscribe();
+
+		// Let's not generate 500+ db connections on startup yeah?
+		ServerEvents serverEvents = new ServerEvents();
+		eventDispatcher.on(ReadyEvent.class)
+				.map(e -> e.getGuilds().size())
+				.flatMap(size -> eventDispatcher
+					.on(GuildCreateEvent.class)
+					.take(size)
+					.last())
+				.next()
+				.subscribe(t -> eventDispatcher.on(GuildCreateEvent.class)
+						.flatMap(e -> serverEvents.onCreate(e.getGuild())).subscribe());
+
+		eventDispatcher.on(GuildDeleteEvent.class).flatMap(serverEvents::onDelete).subscribe();
 
 		CommandHandler commandHandler = new CommandHandler(discordClient, botProperties.getProperty("bot.core.prefix"));
 		commandHandler.registerCommand("ping", new PingCommand());
@@ -95,6 +110,7 @@ public class GlobalBans {
 
 		commandHandler.registerCommand("setnotifychannel", new SetNotificationChannelCommand());
 
+		commandHandler.registerCommand("debugguild", new DebugGuildCommand());
 		commandHandler.registerCommand("getguild", new GetGuildCommand());
 
 		eventDispatcher.on(MessageCreateEvent.class).flatMap(commandHandler::handle).subscribe();

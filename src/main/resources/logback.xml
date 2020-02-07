@@ -4,6 +4,7 @@
 	<logger name="io.netty" level="INFO"/>
 	<logger name="reactor" level="ERROR"/>
 	<logger name="discord4j.common.jackson.UnknownPropertyHandler" level="INFO"/>
+	<logger name="discord4j.gateway.payload" level="ERROR"/>
 
 	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
