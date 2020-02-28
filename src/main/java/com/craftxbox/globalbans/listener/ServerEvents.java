@@ -9,7 +9,6 @@ import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.util.Permission;
 import discord4j.core.object.util.Snowflake;
-import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

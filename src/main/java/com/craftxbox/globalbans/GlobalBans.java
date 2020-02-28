@@ -19,8 +19,12 @@ import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.data.stored.UserBean;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
+import discord4j.store.api.mapping.MappingStoreService;
+import discord4j.store.api.noop.NoOpStoreService;
+import discord4j.store.jdk.JdkStoreService;
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
@@ -80,12 +84,14 @@ public class GlobalBans {
 
 		DatabaseUtil.init(connectionFactory, botProperties.getProperty("bot.core.pgsql.schema"));
 
-		discordClient = new DiscordClientBuilder(botProperties.getProperty("bot.core.token")).build();
+		discordClient = new DiscordClientBuilder(botProperties.getProperty("bot.core.token"))
+				.setStoreService(MappingStoreService.create()
+					.setMapping(new NoOpStoreService(), UserBean.class)
+					.setFallback(new JdkStoreService())).build();
 
 		EventDispatcher eventDispatcher = discordClient.getEventDispatcher();
 
 		BotFarmChecker botFarmChecker = new BotFarmChecker();
-		eventDispatcher.on(GuildCreateEvent.class).flatMap(e -> botFarmChecker.checkServer(e.getGuild())).subscribe();
 
 		// Let's not generate 500+ db connections on startup yeah?
 		ServerEvents serverEvents = new ServerEvents();
@@ -96,8 +102,12 @@ public class GlobalBans {
 					.take(size)
 					.last())
 				.next()
-				.subscribe(t -> eventDispatcher.on(GuildCreateEvent.class)
-						.flatMap(e -> serverEvents.onCreate(e.getGuild())).subscribe());
+				.subscribe(t -> {
+					eventDispatcher.on(GuildCreateEvent.class)
+							.flatMap(e -> serverEvents.onCreate(e.getGuild())).subscribe();
+					eventDispatcher.on(GuildCreateEvent.class)
+							.flatMap(e -> botFarmChecker.checkServer(e.getGuild())).subscribe();
+				});
 
 		eventDispatcher.on(GuildDeleteEvent.class).flatMap(serverEvents::onDelete).subscribe();
 
