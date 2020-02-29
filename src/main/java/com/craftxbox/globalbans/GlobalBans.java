@@ -84,14 +84,11 @@ public class GlobalBans {
 
 		DatabaseUtil.init(connectionFactory, botProperties.getProperty("bot.core.pgsql.schema"));
 
-		discordClient = new DiscordClientBuilder(botProperties.getProperty("bot.core.token"))
-				.setStoreService(MappingStoreService.create()
-					.setMapping(new NoOpStoreService(), UserBean.class)
-					.setFallback(new JdkStoreService())).build();
+		discordClient = new DiscordClientBuilder(botProperties.getProperty("bot.core.token")).build();
 
 		EventDispatcher eventDispatcher = discordClient.getEventDispatcher();
 
-		BotFarmChecker botFarmChecker = new BotFarmChecker();
+		//BotFarmChecker botFarmChecker = new BotFarmChecker();
 
 		// Let's not generate 500+ db connections on startup yeah?
 		ServerEvents serverEvents = new ServerEvents();
@@ -105,8 +102,8 @@ public class GlobalBans {
 				.subscribe(t -> {
 					eventDispatcher.on(GuildCreateEvent.class)
 							.flatMap(e -> serverEvents.onCreate(e.getGuild())).subscribe();
-					eventDispatcher.on(GuildCreateEvent.class)
-							.flatMap(e -> botFarmChecker.checkServer(e.getGuild())).subscribe();
+					//eventDispatcher.on(GuildCreateEvent.class)
+					//		.flatMap(e -> botFarmChecker.checkServer(e.getGuild())).subscribe();
 				});
 
 		eventDispatcher.on(GuildDeleteEvent.class).flatMap(serverEvents::onDelete).subscribe();
