@@ -129,6 +129,24 @@ public class DatabaseUtil {
         return Mono.empty();
     }
 
+    public static Mono<Boolean> isUserWhitelistedForGuild(Guild guild, User user) {
+        return isUserWhitelistedForGuild(guild.getId(), user.getId());
+    }
+
+    public static Mono<Boolean> isUserWhitelistedForGuild(Snowflake guildId, Snowflake userId) {
+        if (connectionFactory != null) {
+            return Flux.from(connectionFactory.create())
+                    .flatMap(connection -> connection.createStatement(
+                            "SELECT null FROM " + schemaName + ".guild_user_whitelist WHERE server_id = $1 AND user_id = $2")
+                            .bind("$1", guildId.asString())
+                            .bind("$2", userId.asString())
+                            .execute()
+                    ).count().flatMap(count -> Mono.just(count > 0));
+        }
+
+        return Mono.empty();
+    }
+
     public static class NoSuchGuildConfigException extends Exception {
 
     }

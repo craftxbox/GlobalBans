@@ -45,31 +45,29 @@ public class UserInfoCommand implements CommandInterface {
 		}
 
 		if (mentionedUser.get() != null) {
-			AtomicBoolean userWarned = new AtomicBoolean(false);
-			AtomicBoolean userBanned = new AtomicBoolean(false);
-			AtomicInteger userPunishmentCount = new AtomicInteger(0);
-
 			return channel.getClient().getUserById(mentionedUser.get())
-					.flatMapMany(user -> DatabaseUtil.getPunishmentsForUser(user).flatMap(punishmentInfo -> {
-						if (punishmentInfo.getCaseType() == PunishmentInfo.CaseType.GLOBAL) {
-							if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.WARN) {
-								userWarned.set(true);
-							} else if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.BAN) {
-								userBanned.set(true);
-							}
-							userPunishmentCount.incrementAndGet();
-						}
+					.flatMapMany(user -> Mono.just(new UserInfoData())
+						.flatMap(userInfoData -> DatabaseUtil.getPunishmentsForUser(user)
+							.flatMap(punishmentInfo -> {
+								if (punishmentInfo.getCaseType() == PunishmentInfo.CaseType.GLOBAL) {
+									if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.WARN) {
+										userInfoData.setUserWarned(true);
+									} else if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.BAN) {
+										userInfoData.setUserBanned(true);
+									}
 
-						return Mono.just(user);
-					}).switchIfEmpty(Mono.just(user))).next()
-					.flatMap(user -> channel.getGuild()
-							.flatMap(guild -> guild.getMemberById(mentionedUser.get())
-									.flatMap(guildMember -> guildMember.getPresence()
-											.flatMap(presence -> createUserEmbed(channel, user, guildMember,
-													presence.getStatus().getValue(), userWarned.get(), userBanned.get(),
-													userPunishmentCount.get())))
-									.onErrorResume(t -> createUserEmbed(channel, user, null, null, userWarned.get(),
-											userBanned.get(), userPunishmentCount.get()))))
+									userInfoData.incrementUserPunishmentCount();
+								}
+
+								return Mono.empty();
+							}).then(Mono.just(userInfoData)))
+								.flatMap(userInfoData -> channel.getGuild()
+									.flatMap(guild -> guild.getMemberById(mentionedUser.get())
+										.flatMap(guildMember -> guildMember.getPresence()
+											.flatMap(presence -> createUserEmbed(channel, user, member,
+													presence.getStatus().getValue(), userInfoData)))
+										.onErrorResume(t -> createUserEmbed(channel, user,
+												null, null, userInfoData)))))
 					.onErrorResume(t -> t instanceof ClientException,
 							t -> channel
 									.createMessage(spec -> spec.setContent(String.format("%s Unable to retrieve user.",
@@ -77,16 +75,15 @@ public class UserInfoCommand implements CommandInterface {
 					.onErrorResume(t -> t instanceof R2dbcNonTransientException, t -> channel.createMessage(spec -> {
 						spec.setContent(String.format("%s Could not retrieve data.",
 								GlobalBans.getConfigurationValue("bot.core.emote.cross")));
-					}));
-
+					}))
+					.single();
 		}
 
 		return channel.createMessage(spec -> spec.setContent(String.format("%s No valid users were specified.",
 				GlobalBans.getConfigurationValue("bot.core.emote.cross"))));
 	}
 
-	private Mono<Message> createUserEmbed(TextChannel channel, User user, Member member, String presence,
-			boolean warned, boolean banned, Integer count) {
+	private Mono<Message> createUserEmbed(TextChannel channel, User user, Member member, String presence, UserInfoData userInfoData) {
 		return channel.createEmbed(embed -> {
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("E L dd yyyy hh:mm a z")
 					.withZone(ZoneId.of("UTC"));
@@ -97,16 +94,55 @@ public class UserInfoCommand implements CommandInterface {
 			embed.addField("Is Bot", Boolean.toString(user.isBot()), true);
 			embed.addField("Status", presence != null ? presence : "Not in guild.", true);
 			embed.addField("ID", user.getId().asString(), true);
-			embed.addField("GlobalBans Listed", warned && banned ? // if warned and banned
-			"Banned" : // list only banned
-			banned ? // else if banned
-			"Banned" : // list banned
-			warned ? // else if warned
-			"Warned" : // list warned
-			"No", true); // else list no
-			if (warned || banned) {
-				embed.addField("GlobalBans Entries", Integer.toString(count), true);
+
+			String listedText = "No";
+
+			if (userInfoData.isUserBanned()) {
+				listedText = "Banned";
+			} else if (userInfoData.isUserWarned()) {
+				listedText = "Warned";
+			}
+
+			embed.addField("GlobalBans Listed", listedText, true);
+
+			if (userInfoData.isListed()) {
+				embed.addField("GlobalBans Entries", String.valueOf(userInfoData.getUserPunishmentCount()), true);
 			}
 		});
+	}
+
+	private class UserInfoData {
+
+		private boolean userWarned;
+		private boolean userBanned;
+		private int userPunishmentCount;
+
+		public boolean isUserWarned() {
+			return userWarned;
+		}
+
+		public void setUserWarned(boolean userWarned) {
+			this.userWarned = userWarned;
+		}
+
+		public boolean isUserBanned() {
+			return userBanned;
+		}
+
+		public void setUserBanned(boolean userBanned) {
+			this.userBanned = userBanned;
+		}
+
+		public boolean isListed() {
+			return userWarned || userBanned;
+		}
+
+		public int getUserPunishmentCount() {
+			return userPunishmentCount;
+		}
+
+		public void incrementUserPunishmentCount() {
+			this.userPunishmentCount++;
+		}
 	}
 }
