@@ -86,10 +86,8 @@ public class GlobalBans {
 
 		EventDispatcher eventDispatcher = discordClient.getEventDispatcher();
 
-		//BotFarmChecker botFarmChecker = new BotFarmChecker();
-
-		// Let's not generate 500+ db connections on startup yeah?
 		ServerEvents serverEvents = new ServerEvents();
+		/*BotFarmChecker botFarmChecker = new BotFarmChecker();
 		eventDispatcher.on(ReadyEvent.class)
 				.map(e -> e.getGuilds().size())
 				.flatMap(size -> eventDispatcher
@@ -100,9 +98,9 @@ public class GlobalBans {
 				.subscribe(t -> {
 					eventDispatcher.on(GuildCreateEvent.class)
 							.flatMap(e -> serverEvents.onCreate(e.getGuild())).subscribe();
-					//eventDispatcher.on(GuildCreateEvent.class)
-					//		.flatMap(e -> botFarmChecker.checkServer(e.getGuild())).subscribe();
-				});
+					eventDispatcher.on(GuildCreateEvent.class)
+							.flatMap(e -> botFarmChecker.checkServer(e.getGuild())).subscribe();
+				});*/
 
 		eventDispatcher.on(GuildDeleteEvent.class).flatMap(serverEvents::onDelete).subscribe();
 
