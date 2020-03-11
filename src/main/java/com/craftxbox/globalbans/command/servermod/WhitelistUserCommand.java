@@ -43,7 +43,7 @@ public class WhitelistUserCommand implements CommandInterface {
         if (mentionedUser.get() != null) {
             return channel.getClient().getUserById(mentionedUser.get())
                     .flatMap(user -> channel.getGuild()
-                        .flatMap(guild -> DatabaseUtil.isUserWhitelistedForGuild(guild, user)
+                        .flatMap(guild -> DatabaseUtil.isUserWhitelistedForGuild(guild.getId(), user.getId())
                             .flatMap(whitelisted -> {
                                 if (whitelisted) {
                                     return channel.createMessage(spec -> spec.setContent(
@@ -53,7 +53,7 @@ public class WhitelistUserCommand implements CommandInterface {
                                                         user.getUsername() + "#" + user.getDiscriminator(),
                                                         GlobalBans.getConfigurationValue("bot.core.prefix"))));
                                 } else {
-                                    return DatabaseUtil.createWhitelist(guild, user).then(channel.createMessage(
+                                    return DatabaseUtil.createWhitelist(guild.getId(), user.getId()).then(channel.createMessage(
                                             String.format("%s Successfully whitelisted %s.",
                                                     GlobalBans.getConfigurationValue("bot.core.emote.tick"),
                                                     user.getUsername() + "#" + user.getDiscriminator())));

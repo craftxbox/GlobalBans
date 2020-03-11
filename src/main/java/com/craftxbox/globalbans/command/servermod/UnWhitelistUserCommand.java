@@ -43,10 +43,10 @@ public class UnWhitelistUserCommand implements CommandInterface {
         if (mentionedUser.get() != null) {
             return channel.getClient().getUserById(mentionedUser.get())
                     .flatMap(user -> channel.getGuild()
-                            .flatMap(guild -> DatabaseUtil.isUserWhitelistedForGuild(guild, user)
+                            .flatMap(guild -> DatabaseUtil.isUserWhitelistedForGuild(guild.getId(), user.getId())
                                     .flatMap(whitelisted -> {
                                         if (whitelisted) {
-                                            return DatabaseUtil.deleteWhitelist(guild, user).then(channel.createMessage(
+                                            return DatabaseUtil.deleteWhitelist(guild.getId(), user.getId()).then(channel.createMessage(
                                                     String.format("%s Successfully unwhitelisted %s.",
                                                             GlobalBans.getConfigurationValue("bot.core.emote.tick"),
                                                             user.getUsername() + "#" + user.getDiscriminator())));

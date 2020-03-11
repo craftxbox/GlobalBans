@@ -47,7 +47,7 @@ public class UserInfoCommand implements CommandInterface {
 		if (mentionedUser.get() != null) {
 			return channel.getClient().getUserById(mentionedUser.get())
 					.flatMapMany(user -> Mono.just(new UserInfoData())
-						.flatMap(userInfoData -> DatabaseUtil.getPunishmentsForUser(user)
+						.flatMap(userInfoData -> DatabaseUtil.getPunishmentsForUser(user.getId())
 							.flatMap(punishmentInfo -> {
 								if (punishmentInfo.getCaseType() == PunishmentInfo.CaseType.GLOBAL) {
 									if (punishmentInfo.getPunishmentType() == PunishmentInfo.PunishmentType.WARN) {
@@ -63,7 +63,7 @@ public class UserInfoCommand implements CommandInterface {
 							}).then(Mono.just(userInfoData)))
 								.flatMap(userInfoData -> channel.getGuild()
 									.flatMap(guild -> guild.getMemberById(mentionedUser.get())
-											.flatMap(guildMember -> DatabaseUtil.isUserWhitelistedForGuild(guild, user)
+											.flatMap(guildMember -> DatabaseUtil.isUserWhitelistedForGuild(guild.getId(), user.getId())
 												.flatMap(whitelisted -> {
 													userInfoData.setUserWhitelisted(whitelisted);
 

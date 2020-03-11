@@ -11,6 +11,7 @@ import com.craftxbox.globalbans.command.user.AboutCommand;
 import com.craftxbox.globalbans.command.user.InviteCommand;
 import com.craftxbox.globalbans.command.user.LegalCommand;
 import com.craftxbox.globalbans.command.user.PingCommand;
+import com.craftxbox.globalbans.command.user.ReportUserCommand;
 import com.craftxbox.globalbans.command.user.UserInfoCommand;
 import com.craftxbox.globalbans.listener.ServerEvents;
 import com.craftxbox.globalbans.util.DatabaseUtil;
@@ -110,6 +111,7 @@ public class GlobalBans {
 		commandHandler.registerCommand("legal", new LegalCommand());
 		commandHandler.registerCommand("invite", new InviteCommand());
 		commandHandler.registerCommand("userinfo", new UserInfoCommand());
+		commandHandler.registerCommand("report", new ReportUserCommand());
 
 		commandHandler.registerCommand("setnotifychannel", new SetNotificationChannelCommand());
 		commandHandler.registerCommand("whitelist", new WhitelistUserCommand());

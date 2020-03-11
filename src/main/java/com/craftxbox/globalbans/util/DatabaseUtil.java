@@ -25,14 +25,6 @@ public class DatabaseUtil {
         schemaName = schmName;
     }
 
-    public static Mono<GuildConfig> getGuildConfig(Guild guild) {
-        return getGuildConfig(guild.getId(), true);
-    }
-
-    public static Mono<GuildConfig> getGuildConfig(Guild guild, boolean forceCreate) {
-        return getGuildConfig(guild.getId(), forceCreate);
-    }
-
     public static Mono<GuildConfig> getGuildConfig(Snowflake guildId, boolean forceCreate) {
         if (connectionFactory != null) {
             return Mono.from(connectionFactory.create())
@@ -51,10 +43,6 @@ public class DatabaseUtil {
         }
 
         return Mono.empty();
-    }
-
-    public static Mono<GuildConfig> submitConfig(Guild guild, GuildConfig guildConfig) {
-        return submitConfig(guild.getId(), guildConfig);
     }
 
     public static Mono<GuildConfig> submitConfig(Snowflake guildId, GuildConfig guildConfig) {
@@ -84,10 +72,6 @@ public class DatabaseUtil {
         return Mono.empty();
     }
 
-    public static Flux<PunishmentInfo> getPunishmentsForUser(User user) {
-        return getPunishmentsForUser(user.getId());
-    }
-
     public static Flux<PunishmentInfo> getPunishmentsForUser(Snowflake userId) {
         if (connectionFactory != null) {
             return Flux.from(connectionFactory.create())
@@ -111,10 +95,6 @@ public class DatabaseUtil {
         return Flux.empty();
     }
 
-    public static Mono<Long> getPunishmentCountForUser(User user) {
-        return getPunishmentCountForUser(user.getId());
-    }
-
     public static Mono<Long> getPunishmentCountForUser(Snowflake userId) {
         if (connectionFactory != null) {
             return Flux.from(connectionFactory.create())
@@ -127,10 +107,6 @@ public class DatabaseUtil {
         }
 
         return Mono.empty();
-    }
-
-    public static Mono<Void> createWhitelist(Guild guild, User user) {
-        return createWhitelist(guild.getId(), user.getId());
     }
 
     public static Mono<Void> createWhitelist(Snowflake guildId, Snowflake userId) {
@@ -146,10 +122,6 @@ public class DatabaseUtil {
         return Mono.empty();
     }
 
-    public static Mono<Void> deleteWhitelist(Guild guild, User user) {
-        return deleteWhitelist(guild.getId(), user.getId());
-    }
-
     public static Mono<Void> deleteWhitelist(Snowflake guildId, Snowflake userId) {
         if (connectionFactory != null) {
             return Flux.from(connectionFactory.create())
@@ -161,10 +133,6 @@ public class DatabaseUtil {
         }
 
         return Mono.empty();
-    }
-
-    public static Mono<Boolean> isUserWhitelistedForGuild(Guild guild, User user) {
-        return isUserWhitelistedForGuild(guild.getId(), user.getId());
     }
 
     public static Mono<Boolean> isUserWhitelistedForGuild(Snowflake guildId, Snowflake userId) {

@@ -26,7 +26,7 @@ public class ServerEvents {
         Optional<Snowflake> selfId = guild.getClient().getSelfId();
 
         if (selfId.isPresent()) {
-            return DatabaseUtil.getGuildConfig(guild, false)
+            return DatabaseUtil.getGuildConfig(guild.getId(), false)
                     .onErrorResume(t -> t instanceof DatabaseUtil.NoSuchGuildConfigException,
                             t -> guild.getMemberById(selfId.get())
                         .flatMap(Member::getBasePermissions)
@@ -54,7 +54,7 @@ public class ServerEvents {
     }
 
     private Mono<GuildConfig> newGuildConfig(Guild guild) {
-        return DatabaseUtil.submitConfig(guild, new GuildConfig(Instant.now(), "not_set", false));
+        return DatabaseUtil.submitConfig(guild.getId(), new GuildConfig(Instant.now(), "not_set", false));
     }
 
     public Mono<?> onDelete(GuildDeleteEvent guildDeleteEvent) {
