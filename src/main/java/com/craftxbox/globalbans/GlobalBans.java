@@ -5,6 +5,8 @@ import com.craftxbox.globalbans.command.botowner.DebugGuildCommand;
 import com.craftxbox.globalbans.command.botowner.GetGuildCommand;
 import com.craftxbox.globalbans.command.botowner.LeaveGuildCommand;
 import com.craftxbox.globalbans.command.servermod.SetNotificationChannelCommand;
+import com.craftxbox.globalbans.command.servermod.UnWhitelistUserCommand;
+import com.craftxbox.globalbans.command.servermod.WhitelistUserCommand;
 import com.craftxbox.globalbans.command.user.AboutCommand;
 import com.craftxbox.globalbans.command.user.InviteCommand;
 import com.craftxbox.globalbans.command.user.LegalCommand;
@@ -112,6 +114,8 @@ public class GlobalBans {
 		commandHandler.registerCommand("userinfo", new UserInfoCommand());
 
 		commandHandler.registerCommand("setnotifychannel", new SetNotificationChannelCommand());
+		commandHandler.registerCommand("whitelist", new WhitelistUserCommand());
+		commandHandler.registerCommand("unwhitelist", new UnWhitelistUserCommand());
 
 		commandHandler.registerCommand("debugguild", new DebugGuildCommand());
 		commandHandler.registerCommand("getguild", new GetGuildCommand());

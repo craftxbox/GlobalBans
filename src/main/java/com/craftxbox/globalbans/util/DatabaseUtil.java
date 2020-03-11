@@ -129,6 +129,40 @@ public class DatabaseUtil {
         return Mono.empty();
     }
 
+    public static Mono<Void> createWhitelist(Guild guild, User user) {
+        return createWhitelist(guild.getId(), user.getId());
+    }
+
+    public static Mono<Void> createWhitelist(Snowflake guildId, Snowflake userId) {
+        if (connectionFactory != null) {
+            return Flux.from(connectionFactory.create())
+                    .flatMap(connection -> connection.createStatement(
+                            "INSERT INTO  " + schemaName + ".guild_user_whitelist (server_id, user_id) VALUES ($1, $2)")
+                            .bind("$1", guildId.asString())
+                            .bind("$2", userId.asString())
+                            .execute()).then();
+        }
+
+        return Mono.empty();
+    }
+
+    public static Mono<Void> deleteWhitelist(Guild guild, User user) {
+        return deleteWhitelist(guild.getId(), user.getId());
+    }
+
+    public static Mono<Void> deleteWhitelist(Snowflake guildId, Snowflake userId) {
+        if (connectionFactory != null) {
+            return Flux.from(connectionFactory.create())
+                    .flatMap(connection -> connection.createStatement(
+                            "DELETE FROM  " + schemaName + ".guild_user_whitelist WHERE server_id = $1 AND user_id = $2")
+                            .bind("$1", guildId.asString())
+                            .bind("$2", userId.asString())
+                            .execute()).then();
+        }
+
+        return Mono.empty();
+    }
+
     public static Mono<Boolean> isUserWhitelistedForGuild(Guild guild, User user) {
         return isUserWhitelistedForGuild(guild.getId(), user.getId());
     }
