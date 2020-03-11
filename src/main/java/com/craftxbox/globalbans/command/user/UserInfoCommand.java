@@ -80,7 +80,7 @@ public class UserInfoCommand implements CommandInterface {
 									.createMessage(spec -> spec.setContent(String.format("%s Unable to retrieve user.",
 											GlobalBans.getConfigurationValue("bot.core.emote.cross")))))
 					.onErrorResume(t -> t instanceof R2dbcNonTransientException, t -> channel.createMessage(spec -> {
-						spec.setContent(String.format("%s Could not retrieve data.",
+						spec.setContent(String.format("%s There was a database error, please try again.",
 								GlobalBans.getConfigurationValue("bot.core.emote.cross")));
 					}))
 					.single();
