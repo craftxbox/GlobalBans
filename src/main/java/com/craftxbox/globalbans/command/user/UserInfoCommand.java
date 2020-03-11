@@ -63,11 +63,18 @@ public class UserInfoCommand implements CommandInterface {
 							}).then(Mono.just(userInfoData)))
 								.flatMap(userInfoData -> channel.getGuild()
 									.flatMap(guild -> guild.getMemberById(mentionedUser.get())
-										.flatMap(guildMember -> guildMember.getPresence()
-											.flatMap(presence -> createUserEmbed(channel, user, member,
-													presence.getStatus().getValue(), userInfoData)))
-										.onErrorResume(t -> createUserEmbed(channel, user,
-												null, null, userInfoData)))))
+											.flatMap(guildMember -> DatabaseUtil.isUserWhitelistedForGuild(guild, user)
+												.flatMap(whitelisted -> {
+													userInfoData.setUserWhitelisted(whitelisted);
+
+													return Mono.empty();
+												}).then(Mono.just(true))
+													.flatMap(ignored -> guildMember.getPresence()
+															.flatMap(presence -> createUserEmbed(channel, user, member,
+																	presence.getStatus().getValue(), userInfoData)))
+													.onErrorResume(t -> createUserEmbed(channel, user,
+															null, null, userInfoData))))))
+
 					.onErrorResume(t -> t instanceof ClientException,
 							t -> channel
 									.createMessage(spec -> spec.setContent(String.format("%s Unable to retrieve user.",
@@ -105,8 +112,12 @@ public class UserInfoCommand implements CommandInterface {
 
 			embed.addField("GlobalBans Listed", listedText, true);
 
-			if (userInfoData.isListed()) {
+			if (userInfoData.isUserListed()) {
 				embed.addField("GlobalBans Entries", String.valueOf(userInfoData.getUserPunishmentCount()), true);
+			}
+
+			if (userInfoData.isUserWhitelisted()) {
+				embed.addField("Guild Whitelisted", "Yes", true);
 			}
 		});
 	}
@@ -115,6 +126,7 @@ public class UserInfoCommand implements CommandInterface {
 
 		private boolean userWarned;
 		private boolean userBanned;
+		private boolean userWhitelisted;
 		private int userPunishmentCount;
 
 		public boolean isUserWarned() {
@@ -133,7 +145,7 @@ public class UserInfoCommand implements CommandInterface {
 			this.userBanned = userBanned;
 		}
 
-		public boolean isListed() {
+		public boolean isUserListed() {
 			return userWarned || userBanned;
 		}
 
@@ -143,6 +155,14 @@ public class UserInfoCommand implements CommandInterface {
 
 		public void incrementUserPunishmentCount() {
 			this.userPunishmentCount++;
+		}
+
+		public boolean isUserWhitelisted() {
+			return userWhitelisted;
+		}
+
+		public void setUserWhitelisted(boolean userWhitelisted) {
+			this.userWhitelisted = userWhitelisted;
 		}
 	}
 }

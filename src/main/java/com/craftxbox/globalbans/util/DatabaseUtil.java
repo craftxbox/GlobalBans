@@ -141,7 +141,8 @@ public class DatabaseUtil {
                             .bind("$1", guildId.asString())
                             .bind("$2", userId.asString())
                             .execute()
-                    ).count().flatMap(count -> Mono.just(count > 0));
+                    ).flatMap(result -> Mono.from(result.getRowsUpdated()).flatMap(rows -> Mono.just(rows > 0)))
+                    .single();
         }
 
         return Mono.empty();
