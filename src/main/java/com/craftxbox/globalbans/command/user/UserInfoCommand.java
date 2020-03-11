@@ -70,7 +70,7 @@ public class UserInfoCommand implements CommandInterface {
 													return Mono.empty();
 												}).then(Mono.just(true))
 													.flatMap(ignored -> guildMember.getPresence()
-															.flatMap(presence -> createUserEmbed(channel, user, member,
+															.flatMap(presence -> createUserEmbed(channel, user, guildMember,
 																	presence.getStatus().getValue(), userInfoData)))
 													.onErrorResume(t -> createUserEmbed(channel, user,
 															null, null, userInfoData))))))
