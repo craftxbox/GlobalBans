@@ -3,13 +3,13 @@ package com.craftxbox.globalbans;
 import com.craftxbox.globalbans.command.CommandHandler;
 import com.craftxbox.globalbans.command.botowner.DebugGuildCommand;
 import com.craftxbox.globalbans.command.botowner.GetGuildCommand;
+import com.craftxbox.globalbans.command.botowner.LeaveGuildCommand;
 import com.craftxbox.globalbans.command.servermod.SetNotificationChannelCommand;
 import com.craftxbox.globalbans.command.user.AboutCommand;
 import com.craftxbox.globalbans.command.user.InviteCommand;
 import com.craftxbox.globalbans.command.user.LegalCommand;
 import com.craftxbox.globalbans.command.user.PingCommand;
 import com.craftxbox.globalbans.command.user.UserInfoCommand;
-import com.craftxbox.globalbans.listener.BotFarmChecker;
 import com.craftxbox.globalbans.listener.ServerEvents;
 import com.craftxbox.globalbans.util.DatabaseUtil;
 import discord4j.core.DiscordClient;
@@ -19,12 +19,8 @@ import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.data.stored.UserBean;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
-import discord4j.store.api.mapping.MappingStoreService;
-import discord4j.store.api.noop.NoOpStoreService;
-import discord4j.store.jdk.JdkStoreService;
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
@@ -119,6 +115,7 @@ public class GlobalBans {
 
 		commandHandler.registerCommand("debugguild", new DebugGuildCommand());
 		commandHandler.registerCommand("getguild", new GetGuildCommand());
+		commandHandler.registerCommand("leaveguild", new LeaveGuildCommand());
 
 		eventDispatcher.on(MessageCreateEvent.class).flatMap(commandHandler::handle).subscribe();
 
