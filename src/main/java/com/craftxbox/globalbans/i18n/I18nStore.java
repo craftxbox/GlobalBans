@@ -17,7 +17,7 @@ public class I18nStore {
 	I18nStore(String lang) {
 		File localeFile = new File("locale/"+lang+".json");
 		StringBuilder localeJsonBuilder = new StringBuilder();
-		try (BufferedReader statusReader = new BufferedReader(new FileReader("status_list.tsv"))) {
+		try (BufferedReader statusReader = new BufferedReader(new FileReader(localeFile))) {
 			String currentLine = null;
 
 			while ((currentLine = statusReader.readLine()) != null) {
