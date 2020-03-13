@@ -1,0 +1,16 @@
+{
+  "database_error": "%s There was a database error, please try again.",
+
+  "no_valid_user_specified": "%s No valid users were specified.",
+  "user_retrieve_error": "%s Unable to retrieve user.",
+
+  "user_already_whitelisted": "%s %s is already whitelisted. To remove a user from the whitelist do %sunwhitelist <user>",
+  "user_whitelisted": "%s Successfully whitelisted %s.",
+
+  "user_not_whitelisted": "%s %s isn't whitelisted. To add a user to the whitelist do %swhitelist <user>",
+  "user_unwhitelisted": "%s Successfully unwhitelisted %s.",
+
+  "report_cooldown": "%s You cannot report a user for another %ss.",
+  "report_no_message": "%s No report message was provided.",
+  "report_missing_arguments": "%s Missing command arguments. Usage %sreport <user> <reason w/ evidence>."
+}

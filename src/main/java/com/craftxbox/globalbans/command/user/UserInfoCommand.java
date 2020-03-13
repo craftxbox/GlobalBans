@@ -77,16 +77,19 @@ public class UserInfoCommand implements CommandInterface {
 
 					.onErrorResume(t -> t instanceof ClientException,
 							t -> channel
-									.createMessage(spec -> spec.setContent(String.format("%s Unable to retrieve user.",
+									.createMessage(spec -> spec.setContent(String.format(GlobalBans
+													.getI18nLibrary().get("en_US").get("user_retrieve_error"),
 											GlobalBans.getConfigurationValue("bot.core.emote.cross")))))
 					.onErrorResume(t -> t instanceof R2dbcNonTransientException, t -> channel.createMessage(spec -> {
-						spec.setContent(String.format("%s There was a database error, please try again.",
+						spec.setContent(String.format(GlobalBans
+										.getI18nLibrary().get("en_US").get("database_error"),
 								GlobalBans.getConfigurationValue("bot.core.emote.cross")));
 					}))
 					.single();
 		}
 
-		return channel.createMessage(spec -> spec.setContent(String.format("%s No valid users were specified.",
+		return channel.createMessage(spec -> spec.setContent(String.format(GlobalBans
+						.getI18nLibrary().get("en_US").get("no_valid_user_specified"),
 				GlobalBans.getConfigurationValue("bot.core.emote.cross"))));
 	}
 

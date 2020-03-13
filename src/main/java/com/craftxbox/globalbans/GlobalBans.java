@@ -13,6 +13,7 @@ import com.craftxbox.globalbans.command.user.LegalCommand;
 import com.craftxbox.globalbans.command.user.PingCommand;
 import com.craftxbox.globalbans.command.user.ReportUserCommand;
 import com.craftxbox.globalbans.command.user.UserInfoCommand;
+import com.craftxbox.globalbans.i18n.I18nLibrary;
 import com.craftxbox.globalbans.listener.ServerEvents;
 import com.craftxbox.globalbans.util.DatabaseUtil;
 import discord4j.core.DiscordClient;
@@ -52,6 +53,7 @@ public class GlobalBans {
 	private static DiscordClient discordClient;
 
 	private static ConnectionFactory connectionFactory;
+	private static I18nLibrary i18nLibrary;
 
 	public static void main(String[] args)  {
 		try {
@@ -82,6 +84,8 @@ public class GlobalBans {
 				.option(ConnectionFactoryOptions.DATABASE, botProperties.getProperty("bot.core.pgsql.db")).build());
 
 		DatabaseUtil.init(connectionFactory, botProperties.getProperty("bot.core.pgsql.schema"));
+
+		i18nLibrary = new I18nLibrary();
 
 		discordClient = new DiscordClientBuilder(botProperties.getProperty("bot.core.token")).build();
 
@@ -156,6 +160,10 @@ public class GlobalBans {
 
 	public static String getConfigurationValue(String key) {
 		return botProperties.getProperty(key);
+	}
+
+	public static I18nLibrary getI18nLibrary() {
+		return i18nLibrary;
 	}
 }
 

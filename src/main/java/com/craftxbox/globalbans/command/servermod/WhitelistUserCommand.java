@@ -47,14 +47,15 @@ public class WhitelistUserCommand implements CommandInterface {
                             .flatMap(whitelisted -> {
                                 if (whitelisted) {
                                     return channel.createMessage(spec -> spec.setContent(
-                                            String.format("%s %s is already whitelisted. " +
-                                                    "To remove a user from the whitelist do %sunwhitelist <user>",
+                                            String.format(GlobalBans.getI18nLibrary().get("en_US")
+                                                            .get("user_already_whitelisted"),
                                                         GlobalBans.getConfigurationValue("bot.core.emote.cross"),
                                                         user.getUsername() + "#" + user.getDiscriminator(),
                                                         GlobalBans.getConfigurationValue("bot.core.prefix"))));
                                 } else {
                                     return DatabaseUtil.createWhitelist(guild.getId(), user.getId()).then(channel.createMessage(
-                                            String.format("%s Successfully whitelisted %s.",
+                                            String.format(GlobalBans.getI18nLibrary().get("en_US")
+                                                            .get("user_whitelisted"),
                                                     GlobalBans.getConfigurationValue("bot.core.emote.tick"),
                                                     user.getUsername() + "#" + user.getDiscriminator())));
                                 }

@@ -67,7 +67,8 @@ public class ReportUserCommand implements CommandInterface {
                             .flatMap(hasCooldown -> {
                                 if (hasCooldown) {
                                     return channel.createMessage(spec -> spec.setContent(
-                                            String.format("%s You cannot report a user for another %ss.",
+                                            String.format(GlobalBans.getI18nLibrary().get("en_US")
+                                                        .get("report_cooldown"),
                                                     GlobalBans.getConfigurationValue("bot.core.emote.cross"),
                                                     Duration.between(Instant.now().minusSeconds(30L),
                                                             reportUserCooldown.get(member.getId())).getSeconds())));
@@ -76,21 +77,25 @@ public class ReportUserCommand implements CommandInterface {
                                             .flatMap(user -> channel.createMessage(spec -> spec.setContent(reportMessage.toString())))
                                             .onErrorResume(t -> t instanceof ClientException, t ->
                                                     channel.createMessage(spec -> spec.setContent(
-                                                            String.format("%s No valid users were specified.",
+                                                            String.format(GlobalBans.getI18nLibrary().get("en_US")
+                                                                        .get("no_valid_user_specified"),
                                                                     GlobalBans.getConfigurationValue("bot.core.emote.cross")))));
                                 }
                             });
                 } else {
-                    return channel.createMessage(spec -> spec.setContent(String.format("%s No report message was provided.",
+                    return channel.createMessage(spec -> spec.setContent(String.format(GlobalBans.getI18nLibrary().get("en_US")
+                                    .get("report_no_message"),
                             GlobalBans.getConfigurationValue("bot.core.emote.cross"))));
                 }
             } else {
-                return channel.createMessage(spec -> spec.setContent(String.format("%s No valid users were specified.",
+                return channel.createMessage(spec -> spec.setContent(String.format(GlobalBans.getI18nLibrary().get("en_US")
+                                .get("no_valid_user_specified"),
                         GlobalBans.getConfigurationValue("bot.core.emote.cross"))));
             }
         } else {
             return channel.createMessage(spec -> spec.setContent(
-                    String.format("%s Missing command arguments. Usage %sreport <user> <reason w/ evidence>.",
+                    String.format(GlobalBans.getI18nLibrary().get("en_US")
+                                    .get("report_missing_arguments"),
                             GlobalBans.getConfigurationValue("bot.core.emote.cross"),
                             GlobalBans.getConfigurationValue("bot.core.prefix"))));
         }
