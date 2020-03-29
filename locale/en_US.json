@@ -12,5 +12,6 @@
 
   "report_cooldown": "%s You cannot report a user for another %ss.",
   "report_no_message": "%s No report message was provided.",
-  "report_missing_arguments": "%s Missing command arguments. Usage %sreport <user> <reason w/ evidence>."
+  "report_missing_arguments": "%s Missing command arguments. Usage %sreport <user> <reason w/ evidence>.",
+  "report_successful": "%s Successfully reported user."
 }
