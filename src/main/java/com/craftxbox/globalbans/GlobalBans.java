@@ -16,12 +16,11 @@ import com.craftxbox.globalbans.command.user.UserInfoCommand;
 import com.craftxbox.globalbans.i18n.I18nLibrary;
 import com.craftxbox.globalbans.listener.ServerEvents;
 import com.craftxbox.globalbans.util.DatabaseUtil;
+import com.craftxbox.globalbans.util.RaidModuleLoader;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.EventDispatcher;
-import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.guild.GuildDeleteEvent;
-import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
@@ -92,21 +91,6 @@ public class GlobalBans {
 		EventDispatcher eventDispatcher = discordClient.getEventDispatcher();
 
 		ServerEvents serverEvents = new ServerEvents();
-		/*BotFarmChecker botFarmChecker = new BotFarmChecker();
-		eventDispatcher.on(ReadyEvent.class)
-				.map(e -> e.getGuilds().size())
-				.flatMap(size -> eventDispatcher
-					.on(GuildCreateEvent.class)
-					.take(size)
-					.last())
-				.next()
-				.subscribe(t -> {
-					eventDispatcher.on(GuildCreateEvent.class)
-							.flatMap(e -> serverEvents.onCreate(e.getGuild())).subscribe();
-					eventDispatcher.on(GuildCreateEvent.class)
-							.flatMap(e -> botFarmChecker.checkServer(e.getGuild())).subscribe();
-				});*/
-
 		eventDispatcher.on(GuildDeleteEvent.class).flatMap(serverEvents::onDelete).subscribe();
 
 		CommandHandler commandHandler = new CommandHandler(discordClient, botProperties.getProperty("bot.core.prefix"));
@@ -126,6 +110,8 @@ public class GlobalBans {
 		commandHandler.registerCommand("leaveguild", new LeaveGuildCommand());
 
 		eventDispatcher.on(MessageCreateEvent.class).flatMap(commandHandler::handle).subscribe();
+
+		new RaidModuleLoader().loadRaidModule(discordClient);
 
 		discordClient.login().subscribe();
 
