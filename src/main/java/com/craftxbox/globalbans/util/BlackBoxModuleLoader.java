@@ -15,13 +15,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
-public class RaidModuleLoader {
+public class BlackBoxModuleLoader {
 
-    private static Logger raidModuleLogger = LoggerFactory.getLogger(RaidModuleLoader.class);
+    private static Logger raidModuleLogger = LoggerFactory.getLogger(BlackBoxModuleLoader.class);
 
-    public void loadRaidModule(DiscordClient discordClient) {
+    public void loadBlackBlockModule(DiscordClient discordClient) {
         try {
-            File file = new File("./RaidModule.jar");
+            File file = new File("./BlackBoxModule.jar");
 
             if (file.exists()) {
                 URLClassLoader classLoader = new URLClassLoader(
@@ -29,7 +29,7 @@ public class RaidModuleLoader {
                 );
 
                 // Kick Start the Module
-                Class<?> initClass = classLoader.loadClass("com.craftxbox.globalbans.raidmodule.RaidModule");
+                Class<?> initClass = classLoader.loadClass("com.craftxbox.globalbans.blackbox.Blackbox");
                 Object initInstance = initClass.getConstructor().newInstance();
                 Method initMethod = initClass.getDeclaredMethod("init", DiscordClient.class);
                 initMethod.invoke(initInstance, discordClient);

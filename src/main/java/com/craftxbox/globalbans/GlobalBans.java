@@ -16,7 +16,7 @@ import com.craftxbox.globalbans.command.user.UserInfoCommand;
 import com.craftxbox.globalbans.i18n.I18nLibrary;
 import com.craftxbox.globalbans.listener.ServerEvents;
 import com.craftxbox.globalbans.util.DatabaseUtil;
-import com.craftxbox.globalbans.util.RaidModuleLoader;
+import com.craftxbox.globalbans.util.BlackBoxModuleLoader;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.EventDispatcher;
@@ -111,7 +111,7 @@ public class GlobalBans {
 
 		eventDispatcher.on(MessageCreateEvent.class).flatMap(commandHandler::handle).subscribe();
 
-		new RaidModuleLoader().loadRaidModule(discordClient);
+		new BlackBoxModuleLoader().loadBlackBlockModule(discordClient);
 
 		discordClient.login().subscribe();
 
