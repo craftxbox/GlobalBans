@@ -24,13 +24,12 @@ public class RaidModuleLoader {
             File file = new File("./RaidModule.jar");
 
             if (file.exists()) {
-                URLClassLoader systemClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
-                Method m = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-                m.setAccessible(true);
-                m.invoke(systemClassLoader, file.toURI().toURL());
+                URLClassLoader classLoader = new URLClassLoader(
+                        new URL[] { file.toURI().toURL() }
+                );
 
                 // Kick Start the Module
-                Class<?> initClass = Class.forName("com.craftxbox.globalbans.raidmodule.RaidModule");
+                Class<?> initClass = classLoader.loadClass("com.craftxbox.globalbans.raidmodule.RaidModule");
                 Object initInstance = initClass.getConstructor().newInstance();
                 Method initMethod = initClass.getDeclaredMethod("init", DiscordClient.class);
                 initMethod.invoke(initInstance, discordClient);
