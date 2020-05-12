@@ -14,8 +14,6 @@ public class PingCommand implements CommandInterface {
 
     @Override
     public Mono<Message> handleCommand(Member member, Message message, TextChannel channel, String[] args) {
-        Instant currentTime = Instant.now();
-
         return channel.createMessage(spec -> spec.setContent(String.format(
                 ":door:  **Gateway Ping -** %sms\r\n" +
                         ":speech_balloon:  **Rest Ping -** %sms",
@@ -26,7 +24,7 @@ public class PingCommand implements CommandInterface {
                     ":door:  **Gateway Ping -** %sms\r\n" +
                     ":speech_balloon:  **Rest Ping -** %sms",
                     channel.getClient().getResponseTime(),
-                    Instant.from(currentTime).getNano() / 1000000)
+                    Instant.from(pongMessage.getId().getTimestamp()).getNano() / 1000000)
         )).subscribe());
     }
 }
