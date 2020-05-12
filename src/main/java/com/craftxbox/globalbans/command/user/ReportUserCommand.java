@@ -2,6 +2,7 @@ package com.craftxbox.globalbans.command.user;
 
 import com.craftxbox.globalbans.GlobalBans;
 import com.craftxbox.globalbans.command.CommandInterface;
+import com.craftxbox.globalbans.util.DatabaseUtil;
 import discord4j.core.object.entity.Attachment;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
@@ -100,7 +101,7 @@ public class ReportUserCommand implements CommandInterface {
 
                                                     reportInformation.append("Reason: ");
 
-                                                    return createReportMessageWithImages(
+                                                    return createReportMessageWithImages(member.getId(), user.getId(),
                                                             reportInformation.toString() + reportMessage.toString(),
                                                             message).then(channel.createMessage(spec -> spec.setContent(
                                                             String.format(GlobalBans.getI18nLibrary().get("en_US")
@@ -133,22 +134,42 @@ public class ReportUserCommand implements CommandInterface {
         }
     }
 
-    private Mono<Message> createReportMessageWithImages(String messageText, Message message) {
+    private Mono<Message> createReportMessageWithImages(Snowflake reporterId, Snowflake reportedId,
+                                                        String messageText, Message message) {
         List<String> neededAttachments = message.getAttachments()
                 .stream().map(Attachment::getUrl).collect(Collectors.toList());
 
         if (!neededAttachments.isEmpty()) {
-            return message.getClient().getChannelById(REPORT_CHANNEL_ID).ofType(TextChannel.class)
-                    .flatMap(channel -> channel.createMessage(spec -> {
-                        StringBuilder attachmentUrls = new StringBuilder("\n\nAttachments:\n");
-                        neededAttachments.forEach(url -> attachmentUrls.append(url).append("\n"));
+            StringBuilder attachmentUrls = new StringBuilder("\n\nAttachments:\n");
+            neededAttachments.forEach(url -> attachmentUrls.append(url).append("\n"));
 
-                        spec.setContent(messageText + attachmentUrls);
-                    }));
+            return DatabaseUtil.createReport(reporterId, reportedId, messageText, attachmentUrls.toString())
+                    .flatMap(reportInfo -> message.getClient()
+                            .getChannelById(REPORT_CHANNEL_ID).ofType(TextChannel.class)
+                    .flatMap(channel -> channel.createMessage(spec -> spec.setContent("Report #"
+                            + reportInfo.getId() + "\n\n" + messageText + attachmentUrls))));
         } else {
-            return message.getClient().getChannelById(REPORT_CHANNEL_ID).ofType(TextChannel.class)
-                    .flatMap(channel -> channel.createMessage(spec -> spec.setContent(messageText)));
+            return DatabaseUtil.createReport(reporterId, reportedId, messageText, "")
+                    .flatMap(reportInfo -> message.getClient()
+                            .getChannelById(REPORT_CHANNEL_ID).ofType(TextChannel.class)
+                            .flatMap(channel -> channel.createMessage(spec -> spec.setContent("Report #"
+                                    + reportInfo.getId() + "\n\n" + messageText))));
         }
+
+        /*if (!neededAttachments.isEmpty()) {
+            StringBuilder attachmentUrls = new StringBuilder("\n\nAttachments:\n");
+            neededAttachments.forEach(url -> attachmentUrls.append(url).append("\n"));
+
+            return DatabaseUtil.createReport(reporterId, reportedId, messageText, attachmentUrls.toString())
+                    .flatMap(reportInfo -> message.getClient().getChannelById(REPORT_CHANNEL_ID).ofType(TextChannel.class)
+                    .flatMap(channel -> channel.createMessage(spec -> {
+                        spec.setContent(messageText + attachmentUrls);
+                    })));
+        } else {
+            return DatabaseUtil.createReport(reporterId, reportedId, messageText, "")
+                    .flatMap(reportInfo -> message.getClient().getChannelById(REPORT_CHANNEL_ID).ofType(TextChannel.class)
+                    .flatMap(channel -> channel.createMessage(spec -> spec.setContent(messageText))));
+        }*/
     }
 
     private Mono<Boolean> userHasCooldown(Snowflake userId) {

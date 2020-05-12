@@ -69,4 +69,18 @@ public class PunishmentInfo {
         WARN,
         BAN
     }
+
+    @Override
+    public String toString() {
+        return "PunishmentInfo{" +
+                "userId=" + userId +
+                ", issuedBy=" + issuedBy +
+                ", caseType=" + caseType +
+                ", caseId=" + caseId +
+                ", punishmentType=" + punishmentType +
+                ", punishmentTime=" + punishmentTime +
+                ", punishmentExpiry=" + punishmentExpiry +
+                ", reason='" + reason + '\'' +
+                '}';
+    }
 }

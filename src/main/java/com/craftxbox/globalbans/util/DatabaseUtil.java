@@ -2,8 +2,7 @@ package com.craftxbox.globalbans.util;
 
 import com.craftxbox.globalbans.data.GuildConfig;
 import com.craftxbox.globalbans.data.PunishmentInfo;
-import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.User;
+import com.craftxbox.globalbans.data.ReportInfo;
 import discord4j.core.object.util.Snowflake;
 import io.r2dbc.spi.ConnectionFactory;
 import reactor.core.publisher.Flux;
@@ -104,6 +103,28 @@ public class DatabaseUtil {
                             .execute())
                     .flatMap(result -> result.map((row, rowMetadata) -> row.get("count", Long.class)))
                     .single();
+        }
+
+        return Mono.empty();
+    }
+
+    public static Mono<ReportInfo> createReport(Snowflake reporterId, Snowflake reportedId,
+                                                String message, String attachments) {
+        if (connectionFactory != null) {
+            return Mono.from(connectionFactory.create())
+                    .flatMapMany(connection -> connection.createStatement(
+                            "INSERT INTO  " + schemaName + ".reports (reporter_id, reported_id, message, attachments)" +
+                                    " VALUES ($1, $2, $3, $4)")
+                            .bind("$1", reporterId.asString())
+                            .bind("$2", reportedId.asString())
+                            .bind("$3", message)
+                            .bind("$4", attachments)
+                            .returnGeneratedValues("id")
+                            .execute())
+                    .flatMap(result -> result.map((row, rowMetadata) -> row.get("id", Integer.class)))
+                    .single()
+                        .flatMap(reportId -> Mono.just(new ReportInfo(reportId, reporterId, reportedId, message,
+                                attachments, null, ReportInfo.ReportStatus.PENDING)));
         }
 
         return Mono.empty();

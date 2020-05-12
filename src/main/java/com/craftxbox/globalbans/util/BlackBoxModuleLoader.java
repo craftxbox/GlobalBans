@@ -34,7 +34,7 @@ public class BlackBoxModuleLoader {
                 Method initMethod = initClass.getDeclaredMethod("init", DiscordClient.class);
                 initMethod.invoke(initInstance, discordClient);
             } else {
-                raidModuleLogger.info("Raid Module is not present.");
+                raidModuleLogger.info("Blackbox Module is not present.");
             }
         } catch (ReflectiveOperationException | MalformedURLException e) {
             raidModuleLogger.warn("There was an issue loading the raid module.", e);
